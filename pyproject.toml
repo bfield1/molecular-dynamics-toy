@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "molecular_dynamics_toy"
+version = "0.0.1a0"
+description = "Interactive molecular dynamics simulation for educational purposes"
+requires-python = ">=3.9"
+dependencies = [
+    "ase",
+    "numpy",
+    "pygame",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
