@@ -4,6 +4,8 @@ import logging
 import pygame
 from typing import Tuple
 
+from molecular_dynamics_toy import colors
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,10 +18,10 @@ class PlayPauseButton:
     """
     
     # Colors
-    BG_COLOR = (240, 240, 240)
-    BG_HOVER_COLOR = (220, 220, 220)
-    BORDER_COLOR = (180, 180, 180)
-    ICON_COLOR = (50, 50, 50)
+    BG_COLOR = colors.CONTROL_BG_COLOR
+    BG_HOVER_COLOR = colors.CONTROL_BG_HOVER_COLOR
+    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
+    ICON_COLOR = colors.CONTROL_ICON_COLOR
     
     def __init__(self, rect: pygame.Rect):
         """Initialize the play/pause button.
@@ -104,7 +106,7 @@ class ControlsWidget:
         playing: True if simulation is playing, False if paused.
     """
     
-    BG_COLOR = (255, 255, 255)
+    BG_COLOR = colors.WIDGET_BG_COLOR
     
     def __init__(self, rect: pygame.Rect):
         """Initialize the controls widget.

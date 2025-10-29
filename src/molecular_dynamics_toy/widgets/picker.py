@@ -4,6 +4,8 @@ import logging
 import pygame
 from typing import Optional, Tuple
 
+from molecular_dynamics_toy import colors
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,12 +19,12 @@ class ElementButton:
     """
     
     # Colors
-    BG_COLOR = (240, 240, 240)
-    BG_SELECTED_COLOR = (100, 150, 255)
-    BORDER_COLOR = (180, 180, 180)
-    BORDER_SELECTED_COLOR = (50, 100, 200)
-    TEXT_COLOR = (30, 30, 30)
-    TEXT_SELECTED_COLOR = (255, 255, 255)
+    BG_COLOR = colors.ELEMENT_BG_COLOR
+    BG_SELECTED_COLOR = colors.ELEMENT_BG_SELECTED_COLOR
+    BORDER_COLOR = colors.ELEMENT_BORDER_COLOR
+    BORDER_SELECTED_COLOR = colors.ELEMENT_BORDER_SELECTED_COLOR
+    TEXT_COLOR = colors.ELEMENT_TEXT_COLOR
+    TEXT_SELECTED_COLOR = colors.ELEMENT_TEXT_SELECTED_COLOR
     
     def __init__(self, symbol: str, rect: pygame.Rect):
         """Initialize an element button.
@@ -88,7 +90,7 @@ class PeriodicTableWidget:
         selected_element: Currently selected element symbol, or None.
     """
     
-    BG_COLOR = (255, 255, 255)
+    BG_COLOR = colors.WIDGET_BG_COLOR
 
     # Periodic table layout (period, group) for elements 1-94
     # Format: symbol: (row, column)

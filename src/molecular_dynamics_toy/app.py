@@ -7,6 +7,7 @@ import sys
 
 from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
+from molecular_dynamics_toy import colors
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,10 @@ class MDApplication:
     CONTROLS_RECT = pygame.Rect(800, 500, 550, 250)
     
     # Colors
-    BG_COLOR = (240, 240, 245)
-    WIDGET_BG_COLOR = (255, 255, 255)
-    BORDER_COLOR = (200, 200, 200)
-    TEXT_COLOR = (50, 50, 50)
+    BG_COLOR = colors.BG_COLOR
+    WIDGET_BG_COLOR = colors.WIDGET_BG_COLOR
+    BORDER_COLOR = colors.BORDER_COLOR
+    TEXT_COLOR = colors.TEXT_COLOR
     
     def __init__(self, fps: int = 30):
         """Initialize the application.
