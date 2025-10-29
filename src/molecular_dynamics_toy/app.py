@@ -5,6 +5,8 @@ import pygame
 from typing import Optional
 import sys
 
+from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +51,6 @@ class MDApplication:
             pygame.RESIZABLE
         )
         pygame.display.set_caption("Interactive Molecular Dynamics")
-        self._update_layout()
         
         self.clock = pygame.time.Clock()
         self.fps = fps
@@ -60,9 +61,11 @@ class MDApplication:
         
         # Widgets (to be implemented)
         self.simulation_widget = None
-        self.periodic_table_widget = None
+        self.periodic_table_widget = PeriodicTableWidget(self.PERIODIC_TABLE_RECT)
         self.controls_widget = None
         
+        self._update_layout()
+
         logger.info(f"MDApplication initialized: {self.WINDOW_WIDTH}x{self.WINDOW_HEIGHT} @ {fps} FPS")
         
     def handle_events(self):
@@ -84,8 +87,8 @@ class MDApplication:
             # Pass events to widgets when they exist
             # if self.simulation_widget:
             #     self.simulation_widget.handle_event(event)
-            # if self.periodic_table_widget:
-            #     self.periodic_table_widget.handle_event(event)
+            if self.periodic_table_widget:
+                self.periodic_table_widget.handle_event(event)
             # if self.controls_widget:
             #     self.controls_widget.handle_event(event)
                     
@@ -115,11 +118,11 @@ class MDApplication:
             "Simulation View",
             "MD simulation will be rendered here"
         )
-        self._draw_widget_placeholder(
-            self.PERIODIC_TABLE_RECT,
-            "Periodic Table",
-            "Element selector will be here"
-        )
+        #self._draw_widget_placeholder(
+        #    self.PERIODIC_TABLE_RECT,
+        #    "Periodic Table",
+        #    "Element selector will be here"
+        #A)
         self._draw_widget_placeholder(
             self.CONTROLS_RECT,
             "Controls",
@@ -129,8 +132,8 @@ class MDApplication:
         # Render widgets when they exist
         # if self.simulation_widget:
         #     self.simulation_widget.render(self.screen)
-        # if self.periodic_table_widget:
-        #     self.periodic_table_widget.render(self.screen)
+        if self.periodic_table_widget:
+            self.periodic_table_widget.render(self.screen)
         # if self.controls_widget:
         #     self.controls_widget.render(self.screen)
         
@@ -193,6 +196,14 @@ class MDApplication:
             sim_size + 2*margin, self.WINDOW_HEIGHT/2 + 2*margin,
             self.WINDOW_WIDTH - sim_size - 3*margin, self.WINDOW_HEIGHT/2 - 3*margin
         )
+
+        # Update widget rects if they exist
+        if self.periodic_table_widget:
+            self.periodic_table_widget.set_rect(self.PERIODIC_TABLE_RECT)
+        # if self.simulation_widget:
+        #     self.simulation_widget.set_rect(self.SIMULATION_RECT)
+        # if self.controls_widget:
+        #     self.controls_widget.set_rect(self.CONTROLS_RECT)
 
 
 def main():
