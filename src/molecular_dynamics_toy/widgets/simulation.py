@@ -9,7 +9,7 @@ from ase import Atoms
 
 from molecular_dynamics_toy.engine import MDEngine
 from molecular_dynamics_toy.data import colors
-from molecular_dynamics_toy.data.atom_properties import ATOM_COLORS, ATOM_RADII
+from molecular_dynamics_toy.data.atom_properties import ATOM_COLORS, ATOM_VDW_RADII, ATOM_COVALENT_RADII
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +25,21 @@ class SimulationWidget:
     BG_COLOR = colors.WIDGET_BG_COLOR
     CELL_COLOR = colors.SIMULATION_CELL_COLOR
     
-    def __init__(self, rect: pygame.Rect, calculator=None):
+    def __init__(self, rect: pygame.Rect, calculator=None, radius_type: str = "covalent"):
         """Initialize the simulation widget.
         
         Args:
             rect: Rectangle defining widget position and size.
             calculator: ASE calculator for MD engine.
+            radius_type: Type of atomic radii to use ('vdw' or 'covalent').
         """
         self.rect = rect
         self.engine = None
         self.calculator = calculator
+        self.radius_type = radius_type
+
+        # Select radii based on type
+        self.atom_radii = ATOM_VDW_RADII if radius_type == "vdw" else ATOM_COVALENT_RADII
         
         # Scale factor for converting Angstroms to pixels
         # Gets overridden later.
@@ -136,7 +141,7 @@ class SimulationWidget:
             
             # Get atom properties
             color = ATOM_COLORS[symbol]
-            radius_angstrom = ATOM_RADII[symbol]
+            radius_angstrom = self.atom_radii[symbol]
             
             # Scale radius based on z-depth for pseudo-3D effect
             z_depth = pos[2] / cell_size  # Normalize to 0-1
