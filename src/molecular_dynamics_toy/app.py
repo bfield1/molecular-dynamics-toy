@@ -7,7 +7,9 @@ import sys
 
 from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
+from molecular_dynamics_toy.widgets.simulation import SimulationWidget
 from molecular_dynamics_toy import colors
+from molecular_dynamics_toy.calculators import get_calculator
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +64,7 @@ class MDApplication:
         self.font = pygame.font.Font(None, 24)
         
         # Widgets (to be implemented)
-        self.simulation_widget = None
+        self.simulation_widget = SimulationWidget(self.SIMULATION_RECT, calculator=get_calculator("mock"))
         self.periodic_table_widget = PeriodicTableWidget(self.PERIODIC_TABLE_RECT)
         self.controls_widget = ControlsWidget(self.CONTROLS_RECT)
         
@@ -99,12 +101,10 @@ class MDApplication:
         
         Called once per frame to update all widgets.
         """
-        # Update widgets when they exist
         if self.simulation_widget:
-            self.simulation_widget.update()
+            self.simulation_widget.update(playing=self.controls_widget.playing)
         if self.controls_widget:
             self.controls_widget.update()
-        pass
         
     def render(self):
         """Render the application.
