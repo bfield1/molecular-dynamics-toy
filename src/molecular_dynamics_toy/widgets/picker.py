@@ -20,7 +20,9 @@ class ElementButton:
     
     # Colors
     BG_COLOR = colors.ELEMENT_BG_COLOR
+    BG_HOVER_COLOR = colors.ELEMENT_BG_HOVER_COLOR
     BG_SELECTED_COLOR = colors.ELEMENT_BG_SELECTED_COLOR
+    BG_SELECTED_HOVER_COLOR = colors.ELEMENT_BG_SELECTED_HOVER_COLOR
     BORDER_COLOR = colors.ELEMENT_BORDER_COLOR
     BORDER_SELECTED_COLOR = colors.ELEMENT_BORDER_SELECTED_COLOR
     TEXT_COLOR = colors.ELEMENT_TEXT_COLOR
@@ -36,9 +38,10 @@ class ElementButton:
         self.symbol = symbol
         self.rect = rect
         self.selected = False
+        self.hovered = False
 
         # Scale font size based on button size
-        # Use ~50% of button height for font size
+        # Use ~80% of button height for font size
         font_size = min(max(12, int(self.rect.height * 0.8)), 24)
         self.font = pygame.font.Font(None, font_size)
         
@@ -56,7 +59,15 @@ class ElementButton:
             logger.debug(f"Element {self.symbol} {'selected' if self.selected else 'deselected'}")
             return True
         return False
+    
+    def handle_hover(self, pos: Tuple[int, int]):
+        """Update hover state based on mouse position.
         
+        Args:
+            pos: Mouse position (x, y).
+        """
+        self.hovered = self.rect.collidepoint(pos)
+
     def deselect(self):
         """Deselect this button."""
         self.selected = False
@@ -68,7 +79,15 @@ class ElementButton:
             surface: Surface to render onto.
         """
         # Draw background
-        bg_color = self.BG_SELECTED_COLOR if self.selected else self.BG_COLOR
+        if self.selected and self.hovered:
+            bg_color = self.BG_SELECTED_HOVER_COLOR
+        elif self.selected:
+            bg_color = self.BG_SELECTED_COLOR
+        elif self.hovered:
+            bg_color = self.BG_HOVER_COLOR
+        else:
+            bg_color = self.BG_COLOR
+        
         pygame.draw.rect(surface, bg_color, self.rect)
         
         # Draw border
@@ -181,6 +200,9 @@ class PeriodicTableWidget:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
                 self._handle_click(event.pos)
+        elif event.type == pygame.MOUSEMOTION:
+            for button in self.buttons:
+                button.handle_hover(event.pos)
                 
     def _handle_click(self, pos: Tuple[int, int]):
         """Handle mouse click on widget.

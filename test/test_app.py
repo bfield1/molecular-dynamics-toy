@@ -180,3 +180,53 @@ def test_periodic_table_resize_preserves_selection(pygame_init):
     assert widget.selected_element == 'H'
     h_button_new = next(b for b in widget.buttons if b.symbol == 'H')
     assert h_button_new.selected is True
+
+def test_element_button_hover(pygame_init):
+    """Test that hovering over element button updates hover state."""
+    rect = pygame.Rect(10, 10, 50, 50)
+    button = ElementButton('H', rect)
+    
+    # Hover inside
+    button.handle_hover((30, 30))
+    assert button.hovered is True
+    
+    # Hover outside
+    button.handle_hover((100, 100))
+    assert button.hovered is False
+
+
+def test_element_button_hover_and_select(pygame_init):
+    """Test that button can be both hovered and selected."""
+    rect = pygame.Rect(10, 10, 50, 50)
+    button = ElementButton('H', rect)
+    
+    # Select the button
+    button.handle_click((30, 30))
+    assert button.selected is True
+    
+    # Hover over selected button
+    button.handle_hover((30, 30))
+    assert button.hovered is True
+    assert button.selected is True
+    
+    # Move away
+    button.handle_hover((100, 100))
+    assert button.hovered is False
+    assert button.selected is True  # Still selected
+
+
+def test_periodic_table_hover_event(pygame_init):
+    """Test that periodic table widget handles hover events."""
+    rect = pygame.Rect(0, 0, 1000, 600)
+    widget = PeriodicTableWidget(rect)
+    
+    h_button = next(b for b in widget.buttons if b.symbol == 'H')
+    
+    # Send mouse motion event over H button
+    event = pygame.event.Event(
+        pygame.MOUSEMOTION,
+        {'pos': h_button.rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert h_button.hovered is True
