@@ -8,7 +8,7 @@ import sys
 from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
 from molecular_dynamics_toy.widgets.simulation import SimulationWidget
-from molecular_dynamics_toy import colors
+from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.calculators import get_calculator
 
 logger = logging.getLogger(__name__)

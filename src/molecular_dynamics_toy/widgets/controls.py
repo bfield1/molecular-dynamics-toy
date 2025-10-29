@@ -4,7 +4,7 @@ import logging
 import pygame
 from typing import Tuple
 
-from molecular_dynamics_toy import colors
+from molecular_dynamics_toy.data import colors
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ from typing import Optional
 from ase import Atoms
 
 from molecular_dynamics_toy.engine import MDEngine
-from molecular_dynamics_toy import colors
+from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.data.atom_properties import ATOM_COLORS, ATOM_RADII
 
 logger = logging.getLogger(__name__)
