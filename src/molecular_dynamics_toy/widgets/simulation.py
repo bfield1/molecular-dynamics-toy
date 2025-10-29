@@ -37,6 +37,7 @@ class SimulationWidget:
         self.calculator = calculator
         
         # Scale factor for converting Angstroms to pixels
+        # Gets overridden later.
         self.scale = 10.0  # pixels per Angstrom
         
         self._create_engine()

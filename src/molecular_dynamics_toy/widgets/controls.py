@@ -122,6 +122,9 @@ class ControlsWidget:
         
     def _create_controls(self):
         """Create control elements."""
+        # Preserve state if recreating
+        old_playing = self.play_pause_button.playing if self.play_pause_button else False
+        
         margin = 20
         button_size = 60
         
@@ -133,6 +136,9 @@ class ControlsWidget:
             button_size
         )
         self.play_pause_button = PlayPauseButton(button_rect)
+        
+        # Restore state
+        self.play_pause_button.playing = old_playing
         
     @property
     def playing(self) -> bool:

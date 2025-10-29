@@ -114,13 +114,6 @@ class MDApplication:
         # Fill background
         self.screen.fill(self.BG_COLOR)
         
-        # Draw widget placeholders
-        self._draw_widget_placeholder(
-            self.SIMULATION_RECT, 
-            "Simulation View",
-            "MD simulation will be rendered here"
-        )
-        
         # Render widgets when they exist
         if self.simulation_widget:
             self.simulation_widget.render(self.screen)

@@ -158,6 +158,5 @@ def test_controls_widget_resize_preserves_state(pygame_init):
     rect2 = pygame.Rect(0, 0, 600, 300)
     widget.set_rect(rect2)
     
-    # State should be reset (new button created)
-    # This is current behavior - could be changed to preserve state
-    assert widget.playing is False
+    # State should be preserved
+    assert widget.playing is True

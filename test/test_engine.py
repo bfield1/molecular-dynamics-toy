@@ -3,45 +3,13 @@
 import pytest
 import numpy as np
 from ase import Atoms
+
 from molecular_dynamics_toy.engine import MDEngine
+from molecular_dynamics_toy.calculators import MockCalculator
 
 # from mattersim.forcefield import MatterSimCalculator
 
 # calculator = MatterSimCalculator(device="cpu")
-
-
-class MockCalculator:
-    """Mock calculator for testing without heavy dependencies."""
-    
-    def __init__(self):
-        self.results = {}
-    
-    def get_potential_energy(self, atoms):
-        """Return dummy energy."""
-        return 0.0
-    
-    def get_forces(self, atoms):
-        """Return simple harmonic forces for H2-like molecule."""
-        if len(atoms) < 2:
-            return np.zeros((len(atoms), 3))
-        
-        forces = np.zeros((len(atoms), 3))
-        
-        # Simple pairwise harmonic potential centered at 0.74 Å
-        equilibrium_distance = 0.74
-        k = 100.0  # Force constant in eV/Å²
-        
-        for i in range(len(atoms)):
-            for j in range(i + 1, len(atoms)):
-                vec = atoms.positions[j] - atoms.positions[i]
-                dist = np.linalg.norm(vec)
-                if dist > 0:
-                    force_mag = k * (dist - equilibrium_distance)
-                    force_vec = force_mag * vec / dist
-                    forces[i] += force_vec
-                    forces[j] -= force_vec
-        
-        return forces
 
 
 def test_mdengine_initialization():
