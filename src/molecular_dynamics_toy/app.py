@@ -1,0 +1,211 @@
+"""Main GUI application for interactive molecular dynamics."""
+
+import logging
+import pygame
+from typing import Optional
+import sys
+
+logger = logging.getLogger(__name__)
+
+
+class MDApplication:
+    """Main application window for interactive molecular dynamics.
+    
+    Manages the pygame window, event loop, and coordinates between different
+    UI widgets (simulation renderer, periodic table, controls).
+    
+    Attributes:
+        screen: Pygame display surface.
+        clock: Pygame clock for controlling frame rate.
+        running: Flag indicating if application is running.
+        fps: Target frames per second.
+    """
+    
+    # Window dimensions
+    WINDOW_WIDTH = 1400
+    WINDOW_HEIGHT = 800
+    
+    # Widget layout (position and size rectangles)
+    SIMULATION_RECT = pygame.Rect(50, 50, 700, 700)
+    PERIODIC_TABLE_RECT = pygame.Rect(800, 50, 550, 400)
+    CONTROLS_RECT = pygame.Rect(800, 500, 550, 250)
+    
+    # Colors
+    BG_COLOR = (240, 240, 245)
+    WIDGET_BG_COLOR = (255, 255, 255)
+    BORDER_COLOR = (200, 200, 200)
+    TEXT_COLOR = (50, 50, 50)
+    
+    def __init__(self, fps: int = 30):
+        """Initialize the application.
+        
+        Args:
+            fps: Target frames per second.
+        """
+        pygame.init()
+        
+        self.screen = pygame.display.set_mode(
+            (self.WINDOW_WIDTH, self.WINDOW_HEIGHT),
+            pygame.RESIZABLE
+        )
+        pygame.display.set_caption("Interactive Molecular Dynamics")
+        self._update_layout()
+        
+        self.clock = pygame.time.Clock()
+        self.fps = fps
+        self.running = False
+        
+        # Font for debug/placeholder text
+        self.font = pygame.font.Font(None, 24)
+        
+        # Widgets (to be implemented)
+        self.simulation_widget = None
+        self.periodic_table_widget = None
+        self.controls_widget = None
+        
+        logger.info(f"MDApplication initialized: {self.WINDOW_WIDTH}x{self.WINDOW_HEIGHT} @ {fps} FPS")
+        
+    def handle_events(self):
+        """Process pygame events.
+        
+        Distributes events to appropriate widgets and handles global events.
+        """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                logger.info("Quit event received")
+                
+            elif event.type == pygame.VIDEORESIZE:
+                self.WINDOW_WIDTH = event.w
+                self.WINDOW_HEIGHT = event.h
+                self._update_layout()
+                logger.debug(f"Window resized to {event.w}x{event.h}")
+                    
+            # Pass events to widgets when they exist
+            # if self.simulation_widget:
+            #     self.simulation_widget.handle_event(event)
+            # if self.periodic_table_widget:
+            #     self.periodic_table_widget.handle_event(event)
+            # if self.controls_widget:
+            #     self.controls_widget.handle_event(event)
+                    
+    def update(self):
+        """Update application state.
+        
+        Called once per frame to update all widgets.
+        """
+        # Update widgets when they exist
+        # if self.simulation_widget:
+        #     self.simulation_widget.update()
+        # if self.controls_widget:
+        #     self.controls_widget.update()
+        pass
+        
+    def render(self):
+        """Render the application.
+        
+        Draws background and all widgets to the screen.
+        """
+        # Fill background
+        self.screen.fill(self.BG_COLOR)
+        
+        # Draw widget placeholders
+        self._draw_widget_placeholder(
+            self.SIMULATION_RECT, 
+            "Simulation View",
+            "MD simulation will be rendered here"
+        )
+        self._draw_widget_placeholder(
+            self.PERIODIC_TABLE_RECT,
+            "Periodic Table",
+            "Element selector will be here"
+        )
+        self._draw_widget_placeholder(
+            self.CONTROLS_RECT,
+            "Controls",
+            "Play/pause, speed, temperature controls"
+        )
+        
+        # Render widgets when they exist
+        # if self.simulation_widget:
+        #     self.simulation_widget.render(self.screen)
+        # if self.periodic_table_widget:
+        #     self.periodic_table_widget.render(self.screen)
+        # if self.controls_widget:
+        #     self.controls_widget.render(self.screen)
+        
+        pygame.display.flip()
+        
+    def _draw_widget_placeholder(self, rect: pygame.Rect, title: str, subtitle: str):
+        """Draw a placeholder box for a widget.
+        
+        Args:
+            rect: Rectangle defining widget position and size.
+            title: Widget title text.
+            subtitle: Widget description text.
+        """
+        # Draw background
+        pygame.draw.rect(self.screen, self.WIDGET_BG_COLOR, rect)
+        pygame.draw.rect(self.screen, self.BORDER_COLOR, rect, 2)
+        
+        # Draw title
+        title_surface = self.font.render(title, True, self.TEXT_COLOR)
+        title_rect = title_surface.get_rect(centerx=rect.centerx, top=rect.top + 20)
+        self.screen.blit(title_surface, title_rect)
+        
+        # Draw subtitle
+        subtitle_font = pygame.font.Font(None, 18)
+        subtitle_surface = subtitle_font.render(subtitle, True, (120, 120, 120))
+        subtitle_rect = subtitle_surface.get_rect(centerx=rect.centerx, top=title_rect.bottom + 10)
+        self.screen.blit(subtitle_surface, subtitle_rect)
+        
+    def run(self):
+        """Run the main application loop."""
+        self.running = True
+        logger.info("Starting main loop")
+        
+        while self.running:
+            self.handle_events()
+            self.update()
+            self.render()
+            self.clock.tick(self.fps)
+            
+        logger.info("Main loop ended")
+        self.quit()
+        
+    def quit(self):
+        """Clean up and quit the application."""
+        pygame.quit()
+        logger.info("Application quit")
+    
+    def _update_layout(self):
+        """Recalculate widget positions based on current window size."""
+        # Simple responsive layout - adjust as needed
+        margin = 50
+        sim_size = min(self.WINDOW_WIDTH/2, self.WINDOW_HEIGHT - 2*margin)
+        
+        self.SIMULATION_RECT = pygame.Rect(margin, margin, sim_size, sim_size)
+        self.PERIODIC_TABLE_RECT = pygame.Rect(
+            sim_size + 2*margin, margin, 
+            self.WINDOW_WIDTH - sim_size - 3*margin, self.WINDOW_HEIGHT/2
+        )
+        self.CONTROLS_RECT = pygame.Rect(
+            sim_size + 2*margin, self.WINDOW_HEIGHT/2 + 2*margin,
+            self.WINDOW_WIDTH - sim_size - 3*margin, self.WINDOW_HEIGHT/2 - 3*margin
+        )
+
+
+def main():
+    """Entry point for the application."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    app = MDApplication(fps=30)
+    app.run()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main()
