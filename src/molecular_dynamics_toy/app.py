@@ -42,11 +42,12 @@ class MDApplication:
     BORDER_COLOR = colors.BORDER_COLOR
     TEXT_COLOR = colors.TEXT_COLOR
     
-    def __init__(self, fps: int = 30):
+    def __init__(self, fps: int = 30, calculator: str = "mattersim"):
         """Initialize the application.
         
         Args:
             fps: Target frames per second.
+            calculator: Calculator name ('mattersim', 'mock').
         """
         pygame.init()
         
@@ -64,7 +65,7 @@ class MDApplication:
         self.font = pygame.font.Font(None, 24)
         
         # Widgets (to be implemented)
-        self.simulation_widget = SimulationWidget(self.SIMULATION_RECT, calculator=get_calculator("mock"))
+        self.simulation_widget = SimulationWidget(self.SIMULATION_RECT, calculator=get_calculator(calculator))
         self.periodic_table_widget = PeriodicTableWidget(self.PERIODIC_TABLE_RECT)
         self.controls_widget = ControlsWidget(self.CONTROLS_RECT)
         

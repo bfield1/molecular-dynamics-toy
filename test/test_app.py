@@ -15,7 +15,7 @@ def pygame_init():
 
 def test_application_initialization(pygame_init):
     """Test that MDApplication initializes without crashing."""
-    app = MDApplication(fps=30)
+    app = MDApplication(fps=30, calculator="mock")
     
     assert app.screen is not None
     assert app.clock is not None
@@ -25,7 +25,7 @@ def test_application_initialization(pygame_init):
 
 def test_application_has_correct_dimensions(pygame_init):
     """Test that application window has expected dimensions."""
-    app = MDApplication()
+    app = MDApplication(calculator="mock")
     
     assert app.WINDOW_WIDTH == 1400
     assert app.WINDOW_HEIGHT == 800
