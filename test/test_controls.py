@@ -2,7 +2,7 @@
 
 import pytest
 import pygame
-from molecular_dynamics_toy.widgets.controls import ControlsWidget, PlayPauseButton
+from molecular_dynamics_toy.widgets.controls import ControlsWidget, PlayPauseButton, ResetButton
 
 
 @pytest.fixture
@@ -160,3 +160,92 @@ def test_controls_widget_resize_preserves_state(pygame_init):
     
     # State should be preserved
     assert widget.playing is True
+
+def test_reset_button_initialization(pygame_init):
+    """Test that ResetButton initializes correctly."""
+    rect = pygame.Rect(10, 10, 60, 60)
+    button = ResetButton(rect)
+    
+    assert button.rect == rect
+    assert button.hovered is False
+
+
+def test_reset_button_click(pygame_init):
+    """Test that clicking reset button returns True."""
+    rect = pygame.Rect(10, 10, 60, 60)
+    button = ResetButton(rect)
+    
+    clicked = button.handle_click((30, 30))
+    
+    assert clicked is True
+
+
+def test_reset_button_click_outside(pygame_init):
+    """Test that clicking outside reset button returns False."""
+    rect = pygame.Rect(10, 10, 60, 60)
+    button = ResetButton(rect)
+    
+    clicked = button.handle_click((100, 100))
+    
+    assert clicked is False
+
+
+def test_reset_button_hover(pygame_init):
+    """Test that hovering over reset button updates hover state."""
+    rect = pygame.Rect(10, 10, 60, 60)
+    button = ResetButton(rect)
+    
+    # Hover inside
+    button.handle_hover((30, 30))
+    assert button.hovered is True
+    
+    # Hover outside
+    button.handle_hover((100, 100))
+    assert button.hovered is False
+
+
+def test_controls_widget_has_reset_button(pygame_init):
+    """Test that ControlsWidget initializes with reset button."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    assert widget.reset_button is not None
+    assert widget.reset_requested is False
+
+
+def test_controls_widget_reset_requested(pygame_init):
+    """Test that clicking reset button sets reset_requested flag."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    # Click reset button
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': widget.reset_button.rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert widget.reset_requested is True
+
+
+def test_controls_widget_reset_flag_persists(pygame_init):
+    """Test that reset_requested flag persists until cleared externally."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    # Click reset button
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': widget.reset_button.rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert widget.reset_requested is True
+    
+    # Flag should persist (not auto-clear)
+    widget.update()
+    assert widget.reset_requested is True
+    
+    # Must be cleared externally
+    widget.reset_requested = False
+    assert widget.reset_requested is False
