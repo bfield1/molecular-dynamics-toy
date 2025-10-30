@@ -239,3 +239,10 @@ class SimulationWidget:
         """
         self.rect = rect
         logger.debug(f"SimulationWidget resized to {rect}")
+    
+    def reset(self):
+        """Reset simulation by removing all atoms."""
+        if self.engine:
+            # Delete all atoms using slice notation
+            del self.engine.atoms[:]
+            logger.info("Simulation reset - all atoms removed")

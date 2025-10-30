@@ -98,12 +98,91 @@ class PlayPauseButton:
             pygame.draw.polygon(surface, self.ICON_COLOR, triangle_points)
 
 
+class ResetButton:
+    """A button that resets the simulation.
+    
+    Attributes:
+        rect: Rectangle defining button position and size.
+        hovered: Whether mouse is currently over this button.
+    """
+    
+    # Colors
+    BG_COLOR = colors.CONTROL_BG_COLOR
+    BG_HOVER_COLOR = colors.CONTROL_BG_HOVER_COLOR
+    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
+    ICON_COLOR = (200, 50, 50)  # Reddish for reset
+    
+    def __init__(self, rect: pygame.Rect):
+        """Initialize the reset button.
+        
+        Args:
+            rect: Rectangle defining position and size.
+        """
+        self.rect = rect
+        self.hovered = False
+        
+    def handle_click(self, pos: Tuple[int, int]) -> bool:
+        """Check if position is inside button and handle click.
+        
+        Args:
+            pos: Mouse position (x, y).
+            
+        Returns:
+            True if button was clicked.
+        """
+        if self.rect.collidepoint(pos):
+            logger.info("Reset button clicked")
+            return True
+        return False
+        
+    def handle_hover(self, pos: Tuple[int, int]):
+        """Update hover state based on mouse position.
+        
+        Args:
+            pos: Mouse position (x, y).
+        """
+        self.hovered = self.rect.collidepoint(pos)
+        
+    def render(self, surface: pygame.Surface):
+        """Render the button.
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        # Draw background
+        bg_color = self.BG_HOVER_COLOR if self.hovered else self.BG_COLOR
+        pygame.draw.rect(surface, bg_color, self.rect)
+        pygame.draw.rect(surface, self.BORDER_COLOR, self.rect, 2)
+        
+        # Draw X icon (two diagonal lines)
+        icon_rect = self.rect.inflate(-20, -20)  # Padding
+        
+        # Top-left to bottom-right
+        pygame.draw.line(
+            surface,
+            self.ICON_COLOR,
+            (icon_rect.left, icon_rect.top),
+            (icon_rect.right, icon_rect.bottom),
+            3
+        )
+        
+        # Top-right to bottom-left
+        pygame.draw.line(
+            surface,
+            self.ICON_COLOR,
+            (icon_rect.right, icon_rect.top),
+            (icon_rect.left, icon_rect.bottom),
+            3
+        )
+
+
 class ControlsWidget:
     """Widget for simulation controls (play/pause, speed, temperature).
     
     Attributes:
         rect: Rectangle defining widget position and size.
         playing: True if simulation is playing, False if paused.
+        reset_requested: True if reset button was clicked this frame.
     """
     
     BG_COLOR = colors.WIDGET_BG_COLOR
@@ -116,6 +195,8 @@ class ControlsWidget:
         """
         self.rect = rect
         self.play_pause_button = None
+        self.reset_button = None
+        self.reset_requested = False
         
         self._create_controls()
         logger.info("ControlsWidget initialized")
@@ -127,18 +208,26 @@ class ControlsWidget:
         
         margin = 20
         button_size = 60
+        spacing = 10
         
         # Create play/pause button
-        button_rect = pygame.Rect(
+        play_button_rect = pygame.Rect(
             self.rect.left + margin,
             self.rect.top + margin,
             button_size,
             button_size
         )
-        self.play_pause_button = PlayPauseButton(button_rect)
-        
-        # Restore state
+        self.play_pause_button = PlayPauseButton(play_button_rect)
         self.play_pause_button.playing = old_playing
+        
+        # Create reset button
+        reset_button_rect = pygame.Rect(
+            self.rect.left + margin + button_size + spacing,
+            self.rect.top + margin,
+            button_size,
+            button_size
+        )
+        self.reset_button = ResetButton(reset_button_rect)
         
     @property
     def playing(self) -> bool:
@@ -155,10 +244,15 @@ class ControlsWidget:
             if event.button == 1:  # Left click
                 if self.play_pause_button:
                     self.play_pause_button.handle_click(event.pos)
+                if self.reset_button:
+                    if self.reset_button.handle_click(event.pos):
+                        self.reset_requested = True
                     
         elif event.type == pygame.MOUSEMOTION:
             if self.play_pause_button:
                 self.play_pause_button.handle_hover(event.pos)
+            if self.reset_button:
+                self.reset_button.handle_hover(event.pos)
                 
     def update(self):
         """Update widget state (called each frame)."""
@@ -176,6 +270,8 @@ class ControlsWidget:
         # Draw controls
         if self.play_pause_button:
             self.play_pause_button.render(surface)
+        if self.reset_button:
+            self.reset_button.render(surface)
             
     def set_rect(self, rect: pygame.Rect):
         """Update widget position and size, recalculating control positions.

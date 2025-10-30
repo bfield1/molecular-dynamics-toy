@@ -105,7 +105,12 @@ class MDApplication:
         # Pass selected element to simulation widget
         if self.simulation_widget and self.periodic_table_widget:
             self.simulation_widget.selected_element = self.periodic_table_widget.selected_element
-            
+        
+        # Handle reset
+        if self.controls_widget and self.controls_widget.reset_requested and self.simulation_widget:
+            self.simulation_widget.reset()
+            self.controls_widget.reset_requested = False  # Clear flag after consuming
+
         # Update simulation with play state
         if self.simulation_widget and self.controls_widget:
             self.simulation_widget.update(self.controls_widget.playing)
