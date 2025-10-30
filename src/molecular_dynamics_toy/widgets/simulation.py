@@ -56,15 +56,16 @@ class SimulationWidget:
             cell_size=cell_size
         )
 
-    def update(self, playing: bool):
+    def update(self, playing: bool, speed: int = 1):
         """Update simulation state.
         
         Args:
             playing: Whether simulation should be running.
+            speed: Number of MD steps to perform per update.
         """
         if playing and self.engine:
             try:
-                self.engine.run(steps=1)
+                self.engine.run(steps=speed)
             except Exception as e:
                 logger.error(f"MD step failed: {e}")
                 

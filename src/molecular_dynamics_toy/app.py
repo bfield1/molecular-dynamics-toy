@@ -113,7 +113,7 @@ class MDApplication:
 
         # Update simulation with play state
         if self.simulation_widget and self.controls_widget:
-            self.simulation_widget.update(self.controls_widget.playing)
+            self.simulation_widget.update(self.controls_widget.playing, self.controls_widget.speed)
         
         if self.controls_widget:
             self.controls_widget.update()

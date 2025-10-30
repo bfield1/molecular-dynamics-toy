@@ -297,3 +297,24 @@ def test_simulation_widget_z_coordinate_empty_cell(pygame_init):
     # Check that new atom has z at cell center
     new_atom_z = widget.engine.atoms.get_positions()[0, 2]
     assert abs(new_atom_z - cell_size / 2) < 0.1
+
+def test_simulation_widget_update_with_speed(pygame_init):
+    """Test that simulation widget respects speed parameter."""
+    from molecular_dynamics_toy.calculators import get_calculator
+    
+    rect = pygame.Rect(0, 0, 700, 700)
+    calc = get_calculator("mock")
+    widget = SimulationWidget(rect, calculator=calc)
+    
+    # Add some atoms for testing
+    widget.engine.add_atom('H', [5, 5, 5])
+    widget.engine.add_atom('H', [5.74, 5, 5])
+    
+    initial_positions = widget.engine.atoms.get_positions().copy()
+    
+    # Update with speed=5
+    widget.update(playing=True, speed=5)
+    
+    # Positions should have changed
+    final_positions = widget.engine.atoms.get_positions()
+    assert not np.array_equal(initial_positions, final_positions)

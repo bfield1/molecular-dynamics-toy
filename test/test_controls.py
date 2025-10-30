@@ -2,7 +2,7 @@
 
 import pytest
 import pygame
-from molecular_dynamics_toy.widgets.controls import ControlsWidget, PlayPauseButton, ResetButton
+from molecular_dynamics_toy.widgets.controls import ControlsWidget, PlayPauseButton, ResetButton, SpeedControl
 
 
 @pytest.fixture
@@ -249,3 +249,149 @@ def test_controls_widget_reset_flag_persists(pygame_init):
     # Must be cleared externally
     widget.reset_requested = False
     assert widget.reset_requested is False
+
+def test_speed_control_initialization(pygame_init):
+    """Test that SpeedControl initializes correctly."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect)
+    
+    assert control.rect == rect
+    assert control.speed == 1
+    assert control.decrease_hovered is False
+    assert control.increase_hovered is False
+
+
+def test_speed_control_custom_initial_speed(pygame_init):
+    """Test that SpeedControl can be initialized with custom speed."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect, initial_speed=5)
+    
+    assert control.speed == 5
+
+
+def test_speed_control_increase(pygame_init):
+    """Test that clicking increase button increments speed."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect)
+    
+    initial_speed = control.speed
+    clicked = control.handle_click(control.increase_button_rect.center)
+    
+    assert clicked is True
+    assert control.speed == initial_speed + 1
+
+
+def test_speed_control_decrease(pygame_init):
+    """Test that clicking decrease button decrements speed."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect, initial_speed=5)
+    
+    initial_speed = control.speed
+    clicked = control.handle_click(control.decrease_button_rect.center)
+    
+    assert clicked is True
+    assert control.speed == initial_speed - 1
+
+
+def test_speed_control_minimum_speed(pygame_init):
+    """Test that speed cannot go below 1."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect, initial_speed=1)
+    
+    # Try to decrease below 1
+    control.handle_click(control.decrease_button_rect.center)
+    
+    assert control.speed == 1
+
+
+def test_speed_control_multiple_increases(pygame_init):
+    """Test that speed can be increased multiple times."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect)
+    
+    for i in range(5):
+        control.handle_click(control.increase_button_rect.center)
+    
+    assert control.speed == 6
+
+
+def test_speed_control_hover(pygame_init):
+    """Test that hovering updates button hover states."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect)
+    
+    # Hover over decrease button
+    control.handle_hover(control.decrease_button_rect.center)
+    assert control.decrease_hovered is True
+    assert control.increase_hovered is False
+    
+    # Hover over increase button
+    control.handle_hover(control.increase_button_rect.center)
+    assert control.decrease_hovered is False
+    assert control.increase_hovered is True
+    
+    # Hover outside
+    control.handle_hover((0, 0))
+    assert control.decrease_hovered is False
+    assert control.increase_hovered is False
+
+
+def test_speed_control_click_outside(pygame_init):
+    """Test that clicking outside buttons doesn't change speed."""
+    rect = pygame.Rect(10, 10, 200, 60)
+    control = SpeedControl(rect, initial_speed=3)
+    
+    # Click in text area (middle)
+    clicked = control.handle_click(control.text_rect.center)
+    
+    assert clicked is False
+    assert control.speed == 3
+
+
+def test_controls_widget_has_speed_control(pygame_init):
+    """Test that ControlsWidget initializes with speed control."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    assert widget.speed_control is not None
+    assert widget.speed == 1
+
+
+def test_controls_widget_speed_property(pygame_init):
+    """Test that speed property reflects speed control state."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    # Increase speed
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': widget.speed_control.increase_button_rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert widget.speed == 2
+
+
+def test_controls_widget_speed_preserved_on_resize(pygame_init):
+    """Test that speed is preserved when widget is resized."""
+    rect1 = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect1)
+    
+    # Set speed to 5
+    for _ in range(4):
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN,
+            {'button': 1, 'pos': widget.speed_control.increase_button_rect.center}
+        )
+        widget.handle_event(event)
+    
+    assert widget.speed == 5
+    
+    # Resize
+    rect2 = pygame.Rect(0, 0, 600, 300)
+    widget.set_rect(rect2)
+    
+    # Speed should be preserved
+    assert widget.speed == 5
+
+
