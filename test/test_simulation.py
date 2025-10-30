@@ -48,6 +48,9 @@ def test_simulation_widget_update_when_playing(pygame_init):
     calc = get_calculator("mock")
     widget = SimulationWidget(rect, calculator=calc)
     
+    # Add an atom
+    widget.engine.add_atom("H", [2,2,2])
+    widget.engine.add_atom("H", [2,3,2])
     initial_positions = widget.engine.atoms.get_positions().copy()
     
     # Update with playing=True

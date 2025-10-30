@@ -42,10 +42,6 @@ class SimulationWidget:
         # Select radii based on type
         self.atom_radii = ATOM_VDW_RADII if radius_type == "vdw" else ATOM_COVALENT_RADII
         
-        # Scale factor for converting Angstroms to pixels
-        # Gets overridden later.
-        self.scale = 10.0  # pixels per Angstrom
-        
         self._create_engine()
         logger.info("SimulationWidget initialized")
         
@@ -59,14 +55,6 @@ class SimulationWidget:
             temperature=300.0,
             cell_size=cell_size
         )
-        
-        # Add H2 molecule in center of cell
-        center = cell_size / 2
-        self.engine.add_atom('H', [center - 0.5, center, center])
-        self.engine.add_atom('H', [center + 0.5, center, center])
-        
-        logger.info("Created test H2 molecule")
-
 
     def update(self, playing: bool):
         """Update simulation state.
@@ -127,7 +115,7 @@ class SimulationWidget:
         cell_rect = self._get_cell_rect()
         
         # Calculate scale: cell_size (Angstroms) -> cell_rect size (pixels)
-        self.scale = cell_rect.width / cell_size
+        scale = cell_rect.width / cell_size
         
         # Sort atoms by z-coordinate for proper depth rendering
         z_coords = positions[:, 2]
@@ -138,8 +126,8 @@ class SimulationWidget:
             symbol = symbols[idx]
             
             # Project 3D -> 2D (simple orthogonal projection, xy plane)
-            screen_x = cell_rect.left + pos[0] * self.scale
-            screen_y = cell_rect.top + pos[1] * self.scale
+            screen_x = cell_rect.left + pos[0] * scale
+            screen_y = cell_rect.top + pos[1] * scale
             
             # Get atom properties
             color = ATOM_COLORS[symbol]
@@ -148,7 +136,7 @@ class SimulationWidget:
             # Scale radius based on z-depth for pseudo-3D effect
             z_depth = pos[2] / cell_size  # Normalize to 0-1
             depth_scale = 0.7 + 0.3 * z_depth  # Farther = smaller
-            radius_pixels = int(radius_angstrom * self.scale * depth_scale)
+            radius_pixels = int(radius_angstrom * scale * depth_scale)
             
             # Adjust brightness based on depth
             brightness = 0.6 + 0.4 * z_depth
@@ -220,9 +208,12 @@ class SimulationWidget:
         """
         cell_size = self.engine.atoms.cell[0, 0]  # Cubic cell
         
+        # Calculate scale based on current cell_rect
+        scale = cell_rect.width / cell_size
+
         # Convert screen pixels to Angstroms
-        x_angstrom = (screen_pos[0] - cell_rect.left) / self.scale
-        y_angstrom = (screen_pos[1] - cell_rect.top) / self.scale
+        x_angstrom = (screen_pos[0] - cell_rect.left) / scale
+        y_angstrom = (screen_pos[1] - cell_rect.top) / scale
         
         # Determine z coordinate
         if len(self.engine.atoms) > 0:
