@@ -25,6 +25,7 @@ class MDApplication:
         clock: Pygame clock for controlling frame rate.
         running: Flag indicating if application is running.
         fps: Target frames per second.
+        show_fps: Whether to display FPS counter.
     """
     
     # Window dimensions
@@ -42,7 +43,7 @@ class MDApplication:
     BORDER_COLOR = colors.BORDER_COLOR
     TEXT_COLOR = colors.TEXT_COLOR
     
-    def __init__(self, fps: int = 30, calculator: str = "mattersim"):
+    def __init__(self, fps: int = 30, calculator: str = "mattersim", show_fps: bool = True):
         """Initialize the application.
         
         Args:
@@ -60,9 +61,11 @@ class MDApplication:
         self.clock = pygame.time.Clock()
         self.fps = fps
         self.running = False
+        self.show_fps = show_fps
         
         # Font for debug/placeholder text
         self.font = pygame.font.Font(None, 24)
+        self.fps_font = pygame.font.Font(None, 20)
         
         # Widgets (to be implemented)
         self.simulation_widget = SimulationWidget(self.SIMULATION_RECT, calculator=get_calculator(calculator))
@@ -133,9 +136,30 @@ class MDApplication:
             self.periodic_table_widget.render(self.screen)
         if self.controls_widget:
             self.controls_widget.render(self.screen)
+
+        # Draw FPS counter
+        if self.show_fps:
+            self._render_fps()
         
         pygame.display.flip()
+    
+    def _render_fps(self):
+        """Render FPS counter in top-left corner."""
+        fps_value = self.clock.get_fps()
+        fps_text = f"FPS: {fps_value:.1f}"
+        fps_surface = self.fps_font.render(fps_text, True, self.TEXT_COLOR)
         
+        # Draw semi-transparent background
+        padding = 5
+        bg_rect = fps_surface.get_rect(topleft=(10, 10)).inflate(padding * 2, padding * 2)
+        bg_surface = pygame.Surface((bg_rect.width, bg_rect.height))
+        bg_surface.set_alpha(180)
+        bg_surface.fill((255, 255, 255))
+        self.screen.blit(bg_surface, bg_rect)
+        
+        # Draw text
+        self.screen.blit(fps_surface, (10 + padding, 10 + padding))
+
     def _draw_widget_placeholder(self, rect: pygame.Rect, title: str, subtitle: str):
         """Draw a placeholder box for a widget.
         
