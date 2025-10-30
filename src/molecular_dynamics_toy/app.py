@@ -113,6 +113,10 @@ class MDApplication:
         if self.controls_widget and self.controls_widget.reset_requested and self.simulation_widget:
             self.simulation_widget.reset()
             self.controls_widget.reset_requested = False  # Clear flag after consuming
+        
+        # Update simulation temperature
+        if self.simulation_widget and self.controls_widget:
+            self.simulation_widget.engine.temperature = self.controls_widget.temperature
 
         # Update simulation with play state
         if self.simulation_widget and self.controls_widget:

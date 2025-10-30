@@ -120,6 +120,10 @@ class MDEngine:
         Args:
             value: New temperature in Kelvin.
         """
+        # Only update if temperature actually changed
+        if abs(self._temperature - value) < 1e-6:
+            return
+            
         self._temperature = value
         
         # Update integrator's temperature if it exists
@@ -130,8 +134,6 @@ class MDEngine:
         # If no integrator yet but we have atoms, initialize velocities
         elif len(self._atoms) > 0:
             MaxwellBoltzmannDistribution(self._atoms, temperature_K=value)
-        
-        self._temperature = value
         
     def _ensure_integrator(self):
         """Create or recreate the MD integrator if needed."""
