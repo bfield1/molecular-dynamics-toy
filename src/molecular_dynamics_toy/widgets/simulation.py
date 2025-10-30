@@ -3,7 +3,7 @@
 import logging
 import pygame
 import numpy as np
-from typing import Optional
+from typing import Optional, Tuple
 
 from ase import Atoms
 
@@ -37,6 +37,7 @@ class SimulationWidget:
         self.engine = None
         self.calculator = calculator
         self.radius_type = radius_type
+        self.selected_element = None  # Will be set by parent application
 
         # Select radii based on type
         self.atom_radii = ATOM_VDW_RADII if radius_type == "vdw" else ATOM_COVALENT_RADII
@@ -65,7 +66,8 @@ class SimulationWidget:
         self.engine.add_atom('H', [center + 0.5, center, center])
         
         logger.info("Created test H2 molecule")
-        
+
+
     def update(self, playing: bool):
         """Update simulation state.
         
@@ -175,8 +177,68 @@ class SimulationWidget:
         Args:
             event: Pygame event to process.
         """
-        # TODO: Handle atom placement clicks
-        pass
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click
+                self._handle_click(event.pos)
+                
+    def _handle_click(self, pos: Tuple[int, int]):
+        """Handle mouse click to add atom.
+        
+        Args:
+            pos: Mouse position (x, y) in screen coordinates.
+        """
+        if not self.selected_element:
+            logger.debug("No element selected, ignoring click")
+            return
+            
+        cell_rect = self._get_cell_rect()
+        
+        # Check if click is inside simulation cell
+        if not cell_rect.collidepoint(pos):
+            logger.debug("Click outside simulation cell")
+            return
+            
+        # Convert screen coordinates to simulation coordinates
+        sim_pos = self._screen_to_sim(pos, cell_rect)
+        
+        if sim_pos is not None:
+            self.engine.add_atom(self.selected_element, sim_pos)
+            logger.info(f"Added {self.selected_element} atom at {sim_pos}")
+            
+    def _screen_to_sim(self, screen_pos: Tuple[int, int], cell_rect: pygame.Rect) -> Optional[np.ndarray]:
+        """Convert screen coordinates to 3D simulation coordinates.
+        
+        Uses the center of mass of existing atoms for z-coordinate, or
+        center of cell if no atoms exist.
+        
+        Args:
+            screen_pos: Screen position (x, y).
+            cell_rect: Rectangle of the simulation cell on screen.
+            
+        Returns:
+            3D position in simulation coordinates (Angstroms), or None if invalid.
+        """
+        cell_size = self.engine.atoms.cell[0, 0]  # Cubic cell
+        
+        # Convert screen pixels to Angstroms
+        x_angstrom = (screen_pos[0] - cell_rect.left) / self.scale
+        y_angstrom = (screen_pos[1] - cell_rect.top) / self.scale
+        
+        # Determine z coordinate
+        if len(self.engine.atoms) > 0:
+            # Use center of mass z-coordinate
+            positions = self.engine.atoms.get_positions()
+            z_angstrom = np.mean(positions[:, 2])
+        else:
+            # Use center of cell
+            z_angstrom = cell_size / 2
+            
+        # Check bounds
+        if 0 <= x_angstrom <= cell_size and 0 <= y_angstrom <= cell_size:
+            return np.array([x_angstrom, y_angstrom, z_angstrom])
+        else:
+            logger.warning(f"Click position {screen_pos} (x,y)=({x_angstrom},{y_angstrom}) out of bounds")
+            return None
         
     def set_rect(self, rect: pygame.Rect):
         """Update widget position and size.

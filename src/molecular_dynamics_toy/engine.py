@@ -166,6 +166,8 @@ class MDEngine:
         
         try:
             self._integrator.run(steps)
+            # Wrap positions to ensure atoms are in home unit cell
+            self._atoms.wrap()
             logger.debug(f"Completed {steps} MD steps")
         except Exception as e:
             logger.error(f"MD step failed: {e}")
