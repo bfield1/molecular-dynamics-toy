@@ -108,22 +108,23 @@ class MDApplication:
         # Pass selected element to simulation widget
         if self.simulation_widget and self.periodic_table_widget:
             self.simulation_widget.selected_element = self.periodic_table_widget.selected_element
-        
+            
         # Handle reset
         if self.controls_widget and self.controls_widget.reset_requested and self.simulation_widget:
             self.simulation_widget.reset()
             self.controls_widget.reset_requested = False  # Clear flag after consuming
-        
-        # Update simulation temperature
+            
+        # Update simulation parameters
         if self.simulation_widget and self.controls_widget:
             self.simulation_widget.engine.temperature = self.controls_widget.temperature
-
-        # Update simulation with play state
+            self.simulation_widget.engine.timestep = self.controls_widget.timestep
+            
+        # Update simulation with play state and speed
         if self.simulation_widget and self.controls_widget:
-            self.simulation_widget.update(self.controls_widget.playing, self.controls_widget.speed)
-        
-        if self.controls_widget:
-            self.controls_widget.update()
+            self.simulation_widget.update(
+                self.controls_widget.playing,
+                self.controls_widget.steps_per_frame
+            )
         
     def render(self):
         """Render the application.

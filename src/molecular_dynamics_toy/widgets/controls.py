@@ -181,7 +181,8 @@ class SpeedControl:
     
     Attributes:
         rect: Rectangle defining control position and size.
-        speed: Number of MD steps per frame (minimum 1).
+        value: Current value (minimum 1).
+        label: Label text to display.
     """
     
     # Colors
@@ -191,34 +192,41 @@ class SpeedControl:
     ICON_COLOR = colors.CONTROL_ICON_COLOR
     TEXT_COLOR = colors.TEXT_COLOR
     
-    def __init__(self, rect: pygame.Rect, initial_speed: int = 1):
+    def __init__(self, rect: pygame.Rect, label: str = "Speed", initial_value: int = 1):
         """Initialize the speed control.
         
         Args:
             rect: Rectangle defining position and size.
-            initial_speed: Initial speed value (steps per frame).
+            label: Label text to display above control.
+            initial_value: Initial value (minimum 1).
         """
         self.rect = rect
-        self.speed = max(1, initial_speed)
+        self.label = label
+        self.value = max(1, initial_value)
         
         # Calculate sub-component rects
-        button_width = rect.height  # Square buttons
+        self.label_height = 20
+        button_height = rect.height - self.label_height
+        button_width = button_height  # Square buttons
         text_width = rect.width - 2 * button_width
         
+        control_top = rect.top + self.label_height
+        
         self.decrease_button_rect = pygame.Rect(
-            rect.left, rect.top, button_width, rect.height
+            rect.left, control_top, button_width, button_height
         )
         self.text_rect = pygame.Rect(
-            rect.left + button_width, rect.top, text_width, rect.height
+            rect.left + button_width, control_top, text_width, button_height
         )
         self.increase_button_rect = pygame.Rect(
-            rect.right - button_width, rect.top, button_width, rect.height
+            rect.right - button_width, control_top, button_width, button_height
         )
         
         self.decrease_hovered = False
         self.increase_hovered = False
         
-        self.font = pygame.font.Font(None, 28)
+        self.font = pygame.font.Font(None, 24)
+        self.label_font = pygame.font.Font(None, 18)
         
     def handle_click(self, pos: Tuple[int, int]) -> bool:
         """Check if position is inside control and handle click.
@@ -230,12 +238,12 @@ class SpeedControl:
             True if control was clicked.
         """
         if self.decrease_button_rect.collidepoint(pos):
-            self.speed = max(1, self.speed - 1)
-            logger.info(f"Speed decreased to {self.speed}")
+            self.value = max(1, self.value - 1)
+            logger.info(f"{self.label} decreased to {self.value}")
             return True
         elif self.increase_button_rect.collidepoint(pos):
-            self.speed += 1
-            logger.info(f"Speed increased to {self.speed}")
+            self.value += 1
+            logger.info(f"{self.label} increased to {self.value}")
             return True
         return False
         
@@ -254,34 +262,39 @@ class SpeedControl:
         Args:
             surface: Surface to render onto.
         """
+        # Draw label
+        label_surface = self.label_font.render(self.label, True, self.TEXT_COLOR)
+        label_rect = label_surface.get_rect(centerx=self.rect.centerx, top=self.rect.top + 2)
+        surface.blit(label_surface, label_rect)
+        
         # Draw decrease button (rewind symbol: <<)
         bg_color = self.BG_HOVER_COLOR if self.decrease_hovered else self.BG_COLOR
         pygame.draw.rect(surface, bg_color, self.decrease_button_rect)
         pygame.draw.rect(surface, self.BORDER_COLOR, self.decrease_button_rect, 2)
         
         # Draw double left triangles
-        icon_rect = self.decrease_button_rect.inflate(-16, -16)
+        icon_rect = self.decrease_button_rect.inflate(-12, -12)
         mid_x = icon_rect.centerx
         # Left triangle
         left_triangle = [
-            (mid_x - 8, icon_rect.top),
-            (mid_x - 8, icon_rect.bottom),
+            (mid_x - 6, icon_rect.top),
+            (mid_x - 6, icon_rect.bottom),
             (icon_rect.left, icon_rect.centery)
         ]
         # Right triangle
         right_triangle = [
             (mid_x + 2, icon_rect.top),
             (mid_x + 2, icon_rect.bottom),
-            (mid_x - 6, icon_rect.centery)
+            (mid_x - 4, icon_rect.centery)
         ]
         pygame.draw.polygon(surface, self.ICON_COLOR, left_triangle)
         pygame.draw.polygon(surface, self.ICON_COLOR, right_triangle)
         
-        # Draw text box with speed value
+        # Draw text box with value
         pygame.draw.rect(surface, colors.WIDGET_BG_COLOR, self.text_rect)
         pygame.draw.rect(surface, self.BORDER_COLOR, self.text_rect, 2)
         
-        text_surface = self.font.render(str(self.speed), True, self.TEXT_COLOR)
+        text_surface = self.font.render(str(self.value), True, self.TEXT_COLOR)
         text_pos = text_surface.get_rect(center=self.text_rect.center)
         surface.blit(text_surface, text_pos)
         
@@ -291,18 +304,18 @@ class SpeedControl:
         pygame.draw.rect(surface, self.BORDER_COLOR, self.increase_button_rect, 2)
         
         # Draw double right triangles
-        icon_rect = self.increase_button_rect.inflate(-16, -16)
+        icon_rect = self.increase_button_rect.inflate(-12, -12)
         mid_x = icon_rect.centerx
         # Left triangle
         left_triangle = [
             (mid_x - 2, icon_rect.top),
             (mid_x - 2, icon_rect.bottom),
-            (mid_x + 6, icon_rect.centery)
+            (mid_x + 4, icon_rect.centery)
         ]
         # Right triangle
         right_triangle = [
-            (mid_x + 8, icon_rect.top),
-            (mid_x + 8, icon_rect.bottom),
+            (mid_x + 6, icon_rect.top),
+            (mid_x + 6, icon_rect.bottom),
             (icon_rect.right, icon_rect.centery)
         ]
         pygame.draw.polygon(surface, self.ICON_COLOR, left_triangle)
@@ -471,7 +484,8 @@ class ControlsWidget:
         rect: Rectangle defining widget position and size.
         playing: True if simulation is playing, False if paused.
         reset_requested: True if reset button was clicked this frame.
-        speed: Number of MD steps per frame.
+        steps_per_frame: Number of MD steps per frame.
+        timestep: MD timestep in femtoseconds.
         temperature: Target temperature in Kelvin.
     """
     
@@ -486,7 +500,8 @@ class ControlsWidget:
         self.rect = rect
         self.play_pause_button = None
         self.reset_button = None
-        self.speed_control = None
+        self.steps_control = None
+        self.timestep_control = None
         self.temperature_slider = None
         self.reset_requested = False
         
@@ -497,7 +512,8 @@ class ControlsWidget:
         """Create control elements."""
         # Preserve state if recreating
         old_playing = self.play_pause_button.playing if self.play_pause_button else False
-        old_speed = self.speed_control.speed if self.speed_control else 1
+        old_steps = self.steps_control.value if self.steps_control else 1
+        old_timestep = self.timestep_control.value if self.timestep_control else 1
         old_temp = self.temperature_slider.temperature if self.temperature_slider else 300.0
         
         margin = 20
@@ -523,15 +539,33 @@ class ControlsWidget:
         )
         self.reset_button = ResetButton(reset_button_rect)
         
-        # Create speed control
-        speed_control_width = 200
-        speed_control_rect = pygame.Rect(
+        # Create speed controls (steps per frame and timestep)
+        speed_control_width = 120
+        speed_control_height = button_size
+        
+        steps_control_rect = pygame.Rect(
             self.rect.left + margin + 2 * (button_size + spacing),
             self.rect.top + margin,
             speed_control_width,
-            button_size
+            speed_control_height
         )
-        self.speed_control = SpeedControl(speed_control_rect, initial_speed=old_speed)
+        self.steps_control = SpeedControl(
+            steps_control_rect,
+            label="Steps/Frame",
+            initial_value=old_steps
+        )
+        
+        timestep_control_rect = pygame.Rect(
+            self.rect.left + margin + 2 * (button_size + spacing) + speed_control_width + spacing,
+            self.rect.top + margin,
+            speed_control_width,
+            speed_control_height
+        )
+        self.timestep_control = SpeedControl(
+            timestep_control_rect,
+            label="Timestep (fs)",
+            initial_value=old_timestep
+        )
         
         # Create temperature slider
         slider_top = self.rect.top + margin + button_size + spacing
@@ -549,9 +583,14 @@ class ControlsWidget:
         return self.play_pause_button.playing if self.play_pause_button else False
         
     @property
-    def speed(self) -> int:
-        """Get current speed (steps per frame)."""
-        return self.speed_control.speed if self.speed_control else 1
+    def steps_per_frame(self) -> int:
+        """Get current steps per frame."""
+        return self.steps_control.value if self.steps_control else 1
+    
+    @property
+    def timestep(self) -> float:
+        """Get current timestep in femtoseconds."""
+        return float(self.timestep_control.value) if self.timestep_control else 1.0
         
     @property
     def temperature(self) -> float:
@@ -571,8 +610,10 @@ class ControlsWidget:
                 if self.reset_button:
                     if self.reset_button.handle_click(event.pos):
                         self.reset_requested = True
-                if self.speed_control:
-                    self.speed_control.handle_click(event.pos)
+                if self.steps_control:
+                    self.steps_control.handle_click(event.pos)
+                if self.timestep_control:
+                    self.timestep_control.handle_click(event.pos)
                 if self.temperature_slider:
                     self.temperature_slider.handle_click(event.pos)
                     
@@ -586,8 +627,10 @@ class ControlsWidget:
                 self.play_pause_button.handle_hover(event.pos)
             if self.reset_button:
                 self.reset_button.handle_hover(event.pos)
-            if self.speed_control:
-                self.speed_control.handle_hover(event.pos)
+            if self.steps_control:
+                self.steps_control.handle_hover(event.pos)
+            if self.timestep_control:
+                self.timestep_control.handle_hover(event.pos)
             if self.temperature_slider:
                 self.temperature_slider.handle_hover(event.pos)
                 self.temperature_slider.handle_drag(event.pos)
@@ -610,8 +653,10 @@ class ControlsWidget:
             self.play_pause_button.render(surface)
         if self.reset_button:
             self.reset_button.render(surface)
-        if self.speed_control:
-            self.speed_control.render(surface)
+        if self.steps_control:
+            self.steps_control.render(surface)
+        if self.timestep_control:
+            self.timestep_control.render(surface)
         if self.temperature_slider:
             self.temperature_slider.render(surface)
             
