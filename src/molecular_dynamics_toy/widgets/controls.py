@@ -181,8 +181,10 @@ class SpeedControl:
     
     Attributes:
         rect: Rectangle defining control position and size.
-        value: Current value (minimum 1).
+        value: Current value.
         label: Label text to display.
+        increment: Amount to increment/decrement by.
+        min_value: Minimum allowed value.
     """
     
     # Colors
@@ -192,17 +194,22 @@ class SpeedControl:
     ICON_COLOR = colors.CONTROL_ICON_COLOR
     TEXT_COLOR = colors.TEXT_COLOR
     
-    def __init__(self, rect: pygame.Rect, label: str = "Speed", initial_value: int = 1):
+    def __init__(self, rect: pygame.Rect, label: str = "Speed", 
+                 initial_value: float = 1, increment: float = 1, min_value: float = 1):
         """Initialize the speed control.
         
         Args:
             rect: Rectangle defining position and size.
             label: Label text to display above control.
-            initial_value: Initial value (minimum 1).
+            initial_value: Initial value.
+            increment: Amount to increment/decrement by.
+            min_value: Minimum allowed value.
         """
         self.rect = rect
         self.label = label
-        self.value = max(1, initial_value)
+        self.value = max(min_value, initial_value)
+        self.increment = increment
+        self.min_value = min_value
         
         # Calculate sub-component rects
         self.label_height = 20
@@ -238,11 +245,11 @@ class SpeedControl:
             True if control was clicked.
         """
         if self.decrease_button_rect.collidepoint(pos):
-            self.value = max(1, self.value - 1)
+            self.value = max(self.min_value, self.value - self.increment)
             logger.info(f"{self.label} decreased to {self.value}")
             return True
         elif self.increase_button_rect.collidepoint(pos):
-            self.value += 1
+            self.value += self.increment
             logger.info(f"{self.label} increased to {self.value}")
             return True
         return False
@@ -294,7 +301,13 @@ class SpeedControl:
         pygame.draw.rect(surface, colors.WIDGET_BG_COLOR, self.text_rect)
         pygame.draw.rect(surface, self.BORDER_COLOR, self.text_rect, 2)
         
-        text_surface = self.font.render(str(self.value), True, self.TEXT_COLOR)
+        # Format value appropriately (show decimals if needed)
+        if isinstance(self.value, float) and self.value % 1 != 0:
+            value_str = f"{self.value:.1f}"
+        else:
+            value_str = str(int(self.value))
+            
+        text_surface = self.font.render(value_str, True, self.TEXT_COLOR)
         text_pos = text_surface.get_rect(center=self.text_rect.center)
         surface.blit(text_surface, text_pos)
         
@@ -564,7 +577,9 @@ class ControlsWidget:
         self.timestep_control = SpeedControl(
             timestep_control_rect,
             label="Timestep (fs)",
-            initial_value=old_timestep
+            initial_value=old_timestep,
+            increment=0.5,
+            min_value=0.5
         )
         
         # Create temperature slider

@@ -256,17 +256,17 @@ def test_speed_control_initialization(pygame_init):
     control = SpeedControl(rect)
     
     assert control.rect == rect
-    assert control.speed == 1
+    assert control.value == 1
     assert control.decrease_hovered is False
     assert control.increase_hovered is False
 
 
-def test_speed_control_custom_initial_speed(pygame_init):
+def test_speed_control_custom_initial_value(pygame_init):
     """Test that SpeedControl can be initialized with custom speed."""
     rect = pygame.Rect(10, 10, 200, 60)
-    control = SpeedControl(rect, initial_speed=5)
+    control = SpeedControl(rect, initial_value=5)
     
-    assert control.speed == 5
+    assert control.value == 5
 
 
 def test_speed_control_increase(pygame_init):
@@ -274,34 +274,34 @@ def test_speed_control_increase(pygame_init):
     rect = pygame.Rect(10, 10, 200, 60)
     control = SpeedControl(rect)
     
-    initial_speed = control.speed
+    initial_speed = control.value
     clicked = control.handle_click(control.increase_button_rect.center)
     
     assert clicked is True
-    assert control.speed == initial_speed + 1
+    assert control.value == initial_speed + 1
 
 
 def test_speed_control_decrease(pygame_init):
     """Test that clicking decrease button decrements speed."""
     rect = pygame.Rect(10, 10, 200, 60)
-    control = SpeedControl(rect, initial_speed=5)
+    control = SpeedControl(rect, initial_value=5)
     
-    initial_speed = control.speed
+    initial_speed = control.value
     clicked = control.handle_click(control.decrease_button_rect.center)
     
     assert clicked is True
-    assert control.speed == initial_speed - 1
+    assert control.value == initial_speed - 1
 
 
 def test_speed_control_minimum_speed(pygame_init):
     """Test that speed cannot go below 1."""
     rect = pygame.Rect(10, 10, 200, 60)
-    control = SpeedControl(rect, initial_speed=1)
+    control = SpeedControl(rect, initial_value=1)
     
     # Try to decrease below 1
     control.handle_click(control.decrease_button_rect.center)
     
-    assert control.speed == 1
+    assert control.value == 1
 
 
 def test_speed_control_multiple_increases(pygame_init):
@@ -312,7 +312,7 @@ def test_speed_control_multiple_increases(pygame_init):
     for i in range(5):
         control.handle_click(control.increase_button_rect.center)
     
-    assert control.speed == 6
+    assert control.value == 6
 
 
 def test_speed_control_hover(pygame_init):
@@ -339,13 +339,13 @@ def test_speed_control_hover(pygame_init):
 def test_speed_control_click_outside(pygame_init):
     """Test that clicking outside buttons doesn't change speed."""
     rect = pygame.Rect(10, 10, 200, 60)
-    control = SpeedControl(rect, initial_speed=3)
+    control = SpeedControl(rect, initial_value=3)
     
     # Click in text area (middle)
     clicked = control.handle_click(control.text_rect.center)
     
     assert clicked is False
-    assert control.speed == 3
+    assert control.value == 3
 
 
 def test_controls_widget_has_speed_control(pygame_init):
@@ -353,8 +353,8 @@ def test_controls_widget_has_speed_control(pygame_init):
     rect = pygame.Rect(0, 0, 500, 250)
     widget = ControlsWidget(rect)
     
-    assert widget.speed_control is not None
-    assert widget.speed == 1
+    assert widget.steps_control is not None
+    assert widget.steps_per_frame == 1
 
 
 def test_controls_widget_speed_property(pygame_init):
@@ -365,11 +365,11 @@ def test_controls_widget_speed_property(pygame_init):
     # Increase speed
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
-        {'button': 1, 'pos': widget.speed_control.increase_button_rect.center}
+        {'button': 1, 'pos': widget.steps_control.increase_button_rect.center}
     )
     widget.handle_event(event)
     
-    assert widget.speed == 2
+    assert widget.steps_per_frame == 2
 
 
 def test_controls_widget_speed_preserved_on_resize(pygame_init):
@@ -381,18 +381,18 @@ def test_controls_widget_speed_preserved_on_resize(pygame_init):
     for _ in range(4):
         event = pygame.event.Event(
             pygame.MOUSEBUTTONDOWN,
-            {'button': 1, 'pos': widget.speed_control.increase_button_rect.center}
+            {'button': 1, 'pos': widget.steps_control.increase_button_rect.center}
         )
         widget.handle_event(event)
     
-    assert widget.speed == 5
+    assert widget.steps_per_frame == 5
     
     # Resize
     rect2 = pygame.Rect(0, 0, 600, 300)
     widget.set_rect(rect2)
     
     # Speed should be preserved
-    assert widget.speed == 5
+    assert widget.steps_per_frame == 5
 
 def test_temperature_slider_initialization(pygame_init):
     """Test that TemperatureSlider initializes correctly."""
@@ -602,3 +602,130 @@ def test_controls_widget_temperature_drag(pygame_init):
     mouseup = pygame.event.Event(pygame.MOUSEBUTTONUP, {'button': 1})
     widget.handle_event(mouseup)
     assert widget.temperature_slider.dragging is False
+
+def test_speed_control_custom_increment(pygame_init):
+    """Test that SpeedControl can use custom increment."""
+    rect = pygame.Rect(10, 10, 120, 60)
+    control = SpeedControl(rect, initial_value=1.0, increment=0.5, min_value=0.5)
+    
+    assert control.value == 1.0
+    assert control.increment == 0.5
+    assert control.min_value == 0.5
+
+
+def test_speed_control_increment_by_half(pygame_init):
+    """Test that control can increment by 0.5."""
+    rect = pygame.Rect(10, 10, 120, 60)
+    control = SpeedControl(rect, initial_value=1.0, increment=0.5, min_value=0.5)
+    
+    # Increase
+    control.handle_click(control.increase_button_rect.center)
+    assert control.value == 1.5
+    
+    # Increase again
+    control.handle_click(control.increase_button_rect.center)
+    assert control.value == 2.0
+
+
+def test_speed_control_decrement_by_half(pygame_init):
+    """Test that control can decrement by 0.5."""
+    rect = pygame.Rect(10, 10, 120, 60)
+    control = SpeedControl(rect, initial_value=2.0, increment=0.5, min_value=0.5)
+    
+    # Decrease
+    control.handle_click(control.decrease_button_rect.center)
+    assert control.value == 1.5
+    
+    # Decrease again
+    control.handle_click(control.decrease_button_rect.center)
+    assert control.value == 1.0
+
+
+def test_speed_control_respects_custom_minimum(pygame_init):
+    """Test that control respects custom minimum value."""
+    rect = pygame.Rect(10, 10, 120, 60)
+    control = SpeedControl(rect, initial_value=0.5, increment=0.5, min_value=0.5)
+    
+    # Try to decrease below minimum
+    control.handle_click(control.decrease_button_rect.center)
+    
+    assert control.value == 0.5
+
+
+def test_controls_widget_has_timestep_control(pygame_init):
+    """Test that ControlsWidget initializes with timestep control."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    assert widget.timestep_control is not None
+    assert widget.timestep == 1.0
+
+
+def test_controls_widget_timestep_property(pygame_init):
+    """Test that timestep property reflects timestep control state."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    # Increase timestep
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': widget.timestep_control.increase_button_rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert widget.timestep == 1.5
+
+
+def test_controls_widget_timestep_decrement(pygame_init):
+    """Test that timestep can be decremented to minimum."""
+    rect = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect)
+    
+    # Decrease timestep
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': widget.timestep_control.decrease_button_rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert widget.timestep == 0.5
+    
+    # Try to decrease below minimum
+    widget.handle_event(event)
+    assert widget.timestep == 0.5
+
+
+def test_controls_widget_timestep_preserved_on_resize(pygame_init):
+    """Test that timestep is preserved when widget is resized."""
+    rect1 = pygame.Rect(0, 0, 500, 250)
+    widget = ControlsWidget(rect1)
+    
+    # Set timestep to 2.5
+    for _ in range(3):
+        event = pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN,
+            {'button': 1, 'pos': widget.timestep_control.increase_button_rect.center}
+        )
+        widget.handle_event(event)
+    
+    assert widget.timestep == 2.5
+    
+    # Resize
+    rect2 = pygame.Rect(0, 0, 600, 300)
+    widget.set_rect(rect2)
+    
+    # Timestep should be preserved
+    assert widget.timestep == 2.5
+
+
+def test_speed_control_float_display(pygame_init):
+    """Test that float values are displayed with one decimal place."""
+    rect = pygame.Rect(10, 10, 120, 60)
+    control = SpeedControl(rect, initial_value=1.5, increment=0.5, min_value=0.5)
+    
+    # This is a rendering test - we just verify it doesn't crash
+    surface = pygame.Surface((200, 100))
+    control.render(surface)
+    
+    # Value should still be 1.5
+    assert control.value == 1.5
