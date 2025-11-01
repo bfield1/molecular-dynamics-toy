@@ -257,8 +257,6 @@ def test_speed_control_initialization(pygame_init):
     
     assert control.rect == rect
     assert control.value == 1
-    assert control.decrease_hovered is False
-    assert control.increase_hovered is False
 
 
 def test_speed_control_custom_initial_value(pygame_init):
@@ -275,7 +273,7 @@ def test_speed_control_increase(pygame_init):
     control = SpeedControl(rect)
     
     initial_speed = control.value
-    clicked = control.handle_click(control.increase_button_rect.center)
+    clicked = control.handle_click(control.increase_button.rect.center)
     
     assert clicked is True
     assert control.value == initial_speed + 1
@@ -287,7 +285,7 @@ def test_speed_control_decrease(pygame_init):
     control = SpeedControl(rect, initial_value=5)
     
     initial_speed = control.value
-    clicked = control.handle_click(control.decrease_button_rect.center)
+    clicked = control.handle_click(control.decrease_button.rect.center)
     
     assert clicked is True
     assert control.value == initial_speed - 1
@@ -299,7 +297,7 @@ def test_speed_control_minimum_speed(pygame_init):
     control = SpeedControl(rect, initial_value=1)
     
     # Try to decrease below 1
-    control.handle_click(control.decrease_button_rect.center)
+    control.handle_click(control.decrease_button.rect.center)
     
     assert control.value == 1
 
@@ -310,7 +308,7 @@ def test_speed_control_multiple_increases(pygame_init):
     control = SpeedControl(rect)
     
     for i in range(5):
-        control.handle_click(control.increase_button_rect.center)
+        control.handle_click(control.increase_button.rect.center)
     
     assert control.value == 6
 
@@ -321,19 +319,19 @@ def test_speed_control_hover(pygame_init):
     control = SpeedControl(rect)
     
     # Hover over decrease button
-    control.handle_hover(control.decrease_button_rect.center)
-    assert control.decrease_hovered is True
-    assert control.increase_hovered is False
+    control.handle_hover(control.decrease_button.rect.center)
+    assert control.decrease_button.hovered is True
+    assert control.increase_button.hovered is False
     
     # Hover over increase button
-    control.handle_hover(control.increase_button_rect.center)
-    assert control.decrease_hovered is False
-    assert control.increase_hovered is True
+    control.handle_hover(control.increase_button.rect.center)
+    assert control.decrease_button.hovered is False
+    assert control.increase_button.hovered is True
     
     # Hover outside
     control.handle_hover((0, 0))
-    assert control.decrease_hovered is False
-    assert control.increase_hovered is False
+    assert control.decrease_button.hovered is False
+    assert control.increase_button.hovered is False
 
 
 def test_speed_control_click_outside(pygame_init):
@@ -365,7 +363,7 @@ def test_controls_widget_speed_property(pygame_init):
     # Increase speed
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
-        {'button': 1, 'pos': widget.steps_control.increase_button_rect.center}
+        {'button': 1, 'pos': widget.steps_control.increase_button.rect.center}
     )
     widget.handle_event(event)
     
@@ -381,7 +379,7 @@ def test_controls_widget_speed_preserved_on_resize(pygame_init):
     for _ in range(4):
         event = pygame.event.Event(
             pygame.MOUSEBUTTONDOWN,
-            {'button': 1, 'pos': widget.steps_control.increase_button_rect.center}
+            {'button': 1, 'pos': widget.steps_control.increase_button.rect.center}
         )
         widget.handle_event(event)
     
@@ -619,11 +617,11 @@ def test_speed_control_increment_by_half(pygame_init):
     control = SpeedControl(rect, initial_value=1.0, increment=0.5, min_value=0.5)
     
     # Increase
-    control.handle_click(control.increase_button_rect.center)
+    control.handle_click(control.increase_button.rect.center)
     assert control.value == 1.5
     
     # Increase again
-    control.handle_click(control.increase_button_rect.center)
+    control.handle_click(control.increase_button.rect.center)
     assert control.value == 2.0
 
 
@@ -633,11 +631,11 @@ def test_speed_control_decrement_by_half(pygame_init):
     control = SpeedControl(rect, initial_value=2.0, increment=0.5, min_value=0.5)
     
     # Decrease
-    control.handle_click(control.decrease_button_rect.center)
+    control.handle_click(control.decrease_button.rect.center)
     assert control.value == 1.5
     
     # Decrease again
-    control.handle_click(control.decrease_button_rect.center)
+    control.handle_click(control.decrease_button.rect.center)
     assert control.value == 1.0
 
 
@@ -647,7 +645,7 @@ def test_speed_control_respects_custom_minimum(pygame_init):
     control = SpeedControl(rect, initial_value=0.5, increment=0.5, min_value=0.5)
     
     # Try to decrease below minimum
-    control.handle_click(control.decrease_button_rect.center)
+    control.handle_click(control.decrease_button.rect.center)
     
     assert control.value == 0.5
 
@@ -669,7 +667,7 @@ def test_controls_widget_timestep_property(pygame_init):
     # Increase timestep
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
-        {'button': 1, 'pos': widget.timestep_control.increase_button_rect.center}
+        {'button': 1, 'pos': widget.timestep_control.increase_button.rect.center}
     )
     widget.handle_event(event)
     
@@ -684,7 +682,7 @@ def test_controls_widget_timestep_decrement(pygame_init):
     # Decrease timestep
     event = pygame.event.Event(
         pygame.MOUSEBUTTONDOWN,
-        {'button': 1, 'pos': widget.timestep_control.decrease_button_rect.center}
+        {'button': 1, 'pos': widget.timestep_control.decrease_button.rect.center}
     )
     widget.handle_event(event)
     
@@ -704,7 +702,7 @@ def test_controls_widget_timestep_preserved_on_resize(pygame_init):
     for _ in range(3):
         event = pygame.event.Event(
             pygame.MOUSEBUTTONDOWN,
-            {'button': 1, 'pos': widget.timestep_control.increase_button_rect.center}
+            {'button': 1, 'pos': widget.timestep_control.increase_button.rect.center}
         )
         widget.handle_event(event)
     

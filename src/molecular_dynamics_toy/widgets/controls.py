@@ -5,22 +5,19 @@ import pygame
 from typing import Tuple
 
 from molecular_dynamics_toy.data import colors
+from molecular_dynamics_toy.widgets.base import Button
 
 logger = logging.getLogger(__name__)
 
 
-class PlayPauseButton:
+class PlayPauseButton(Button):
     """A button that toggles between play and pause states.
     
     Attributes:
-        rect: Rectangle defining button position and size.
         playing: True if in play state, False if paused.
     """
     
-    # Colors
-    BG_COLOR = colors.CONTROL_BG_COLOR
-    BG_HOVER_COLOR = colors.CONTROL_BG_HOVER_COLOR
-    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
+    # Colors (use Button defaults)
     ICON_COLOR = colors.CONTROL_ICON_COLOR
     
     def __init__(self, rect: pygame.Rect):
@@ -29,45 +26,21 @@ class PlayPauseButton:
         Args:
             rect: Rectangle defining position and size.
         """
-        self.rect = rect
+        super().__init__(rect)
         self.playing = False
-        self.hovered = False
         
-    def handle_click(self, pos: Tuple[int, int]) -> bool:
-        """Check if position is inside button and handle click.
+    def on_click(self):
+        """Toggle play/pause state and log the change."""
+        super().on_click()
+        self.playing = not self.playing
+        logger.info(f"Simulation {'playing' if self.playing else 'paused'}")
         
-        Args:
-            pos: Mouse position (x, y).
-            
-        Returns:
-            True if button was clicked.
-        """
-        if self.rect.collidepoint(pos):
-            self.playing = not self.playing
-            logger.info(f"Simulation {'playing' if self.playing else 'paused'}")
-            return True
-        return False
-        
-    def handle_hover(self, pos: Tuple[int, int]):
-        """Update hover state based on mouse position.
-        
-        Args:
-            pos: Mouse position (x, y).
-        """
-        self.hovered = self.rect.collidepoint(pos)
-        
-    def render(self, surface: pygame.Surface):
-        """Render the button.
+    def render_content(self, surface: pygame.Surface):
+        """Render the play or pause icon.
         
         Args:
             surface: Surface to render onto.
         """
-        # Draw background
-        bg_color = self.BG_HOVER_COLOR if self.hovered else self.BG_COLOR
-        pygame.draw.rect(surface, bg_color, self.rect)
-        pygame.draw.rect(surface, self.BORDER_COLOR, self.rect, 2)
-        
-        # Draw icon (play triangle or pause bars)
         icon_rect = self.rect.inflate(-20, -20)  # Padding
         
         if self.playing:
@@ -98,19 +71,11 @@ class PlayPauseButton:
             pygame.draw.polygon(surface, self.ICON_COLOR, triangle_points)
 
 
-class ResetButton:
-    """A button that resets the simulation.
-    
-    Attributes:
-        rect: Rectangle defining button position and size.
-        hovered: Whether mouse is currently over this button.
-    """
+class ResetButton(Button):
+    """A button that resets the simulation."""
     
     # Colors
-    BG_COLOR = colors.CONTROL_BG_COLOR
-    BG_HOVER_COLOR = colors.CONTROL_BG_HOVER_COLOR
-    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
-    ICON_COLOR = (200, 50, 50)  # Reddish for reset
+    ICON_COLOR = colors.ICON_RESET_COLOR  # Reddish for reset
     
     def __init__(self, rect: pygame.Rect):
         """Initialize the reset button.
@@ -118,42 +83,18 @@ class ResetButton:
         Args:
             rect: Rectangle defining position and size.
         """
-        self.rect = rect
-        self.hovered = False
+        super().__init__(rect)
         
-    def handle_click(self, pos: Tuple[int, int]) -> bool:
-        """Check if position is inside button and handle click.
+    def on_click(self):
+        """Log reset button click."""
+        logger.info("Reset button clicked")
         
-        Args:
-            pos: Mouse position (x, y).
-            
-        Returns:
-            True if button was clicked.
-        """
-        if self.rect.collidepoint(pos):
-            logger.info("Reset button clicked")
-            return True
-        return False
-        
-    def handle_hover(self, pos: Tuple[int, int]):
-        """Update hover state based on mouse position.
-        
-        Args:
-            pos: Mouse position (x, y).
-        """
-        self.hovered = self.rect.collidepoint(pos)
-        
-    def render(self, surface: pygame.Surface):
-        """Render the button.
+    def render_content(self, surface: pygame.Surface):
+        """Render the X icon.
         
         Args:
             surface: Surface to render onto.
         """
-        # Draw background
-        bg_color = self.BG_HOVER_COLOR if self.hovered else self.BG_COLOR
-        pygame.draw.rect(surface, bg_color, self.rect)
-        pygame.draw.rect(surface, self.BORDER_COLOR, self.rect, 2)
-        
         # Draw X icon (two diagonal lines)
         icon_rect = self.rect.inflate(-20, -20)  # Padding
         
@@ -176,6 +117,65 @@ class ResetButton:
         )
 
 
+class SpeedControlButton(Button):
+    """A button for incrementing or decrementing a value.
+    
+    Attributes:
+        direction: 'increase' or 'decrease'.
+    """
+    
+    ICON_COLOR = colors.CONTROL_ICON_COLOR
+    
+    def __init__(self, rect: pygame.Rect, direction: str):
+        """Initialize the speed control button.
+        
+        Args:
+            rect: Rectangle defining position and size.
+            direction: 'increase' or 'decrease'.
+        """
+        if direction != "increase" and direction != "decrease":
+            raise ValueError(f"direction should be 'increase' or 'decrease', not '{direction}'")
+        super().__init__(rect)
+        self.direction = direction
+        
+    def render_content(self, surface: pygame.Surface):
+        """Render double triangle icon.
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        icon_rect = self.rect.inflate(-12, -12)
+        mid_x = icon_rect.centerx
+        
+        if self.direction == 'decrease':
+            # Draw double left triangles (rewind symbol: <<)
+            left_triangle = [
+                (mid_x - 6, icon_rect.top),
+                (mid_x - 6, icon_rect.bottom),
+                (icon_rect.left, icon_rect.centery)
+            ]
+            right_triangle = [
+                (mid_x + 2, icon_rect.top),
+                (mid_x + 2, icon_rect.bottom),
+                (mid_x - 4, icon_rect.centery)
+            ]
+        else:  # 'increase'
+            # Draw double right triangles (fast forward symbol: >>)
+            left_triangle = [
+                (mid_x - 2, icon_rect.top),
+                (mid_x - 2, icon_rect.bottom),
+                (mid_x + 4, icon_rect.centery)
+            ]
+            right_triangle = [
+                (mid_x + 6, icon_rect.top),
+                (mid_x + 6, icon_rect.bottom),
+                (icon_rect.right, icon_rect.centery)
+            ]
+            
+        pygame.draw.polygon(surface, self.ICON_COLOR, left_triangle)
+        pygame.draw.polygon(surface, self.ICON_COLOR, right_triangle)
+
+
 class SpeedControl:
     """A control for adjusting simulation speed (steps per frame).
     
@@ -188,11 +188,8 @@ class SpeedControl:
     """
     
     # Colors
-    BG_COLOR = colors.CONTROL_BG_COLOR
-    BG_HOVER_COLOR = colors.CONTROL_BG_HOVER_COLOR
-    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
-    ICON_COLOR = colors.CONTROL_ICON_COLOR
     TEXT_COLOR = colors.TEXT_COLOR
+    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
     
     def __init__(self, rect: pygame.Rect, label: str = "Speed", 
                  initial_value: float = 1, increment: float = 1, min_value: float = 1):
@@ -219,18 +216,19 @@ class SpeedControl:
         
         control_top = rect.top + self.label_height
         
-        self.decrease_button_rect = pygame.Rect(
+        decrease_rect = pygame.Rect(
             rect.left, control_top, button_width, button_height
         )
         self.text_rect = pygame.Rect(
             rect.left + button_width, control_top, text_width, button_height
         )
-        self.increase_button_rect = pygame.Rect(
+        increase_rect = pygame.Rect(
             rect.right - button_width, control_top, button_width, button_height
         )
         
-        self.decrease_hovered = False
-        self.increase_hovered = False
+        # Create button objects
+        self.decrease_button = SpeedControlButton(decrease_rect, 'decrease')
+        self.increase_button = SpeedControlButton(increase_rect, 'increase')
         
         self.font = pygame.font.Font(None, 24)
         self.label_font = pygame.font.Font(None, 18)
@@ -244,11 +242,11 @@ class SpeedControl:
         Returns:
             True if control was clicked.
         """
-        if self.decrease_button_rect.collidepoint(pos):
+        if self.decrease_button.handle_click(pos):
             self.value = max(self.min_value, self.value - self.increment)
             logger.info(f"{self.label} decreased to {self.value}")
             return True
-        elif self.increase_button_rect.collidepoint(pos):
+        elif self.increase_button.handle_click(pos):
             self.value += self.increment
             logger.info(f"{self.label} increased to {self.value}")
             return True
@@ -260,8 +258,8 @@ class SpeedControl:
         Args:
             pos: Mouse position (x, y).
         """
-        self.decrease_hovered = self.decrease_button_rect.collidepoint(pos)
-        self.increase_hovered = self.increase_button_rect.collidepoint(pos)
+        self.decrease_button.handle_hover(pos)
+        self.increase_button.handle_hover(pos)
         
     def render(self, surface: pygame.Surface):
         """Render the control.
@@ -274,28 +272,9 @@ class SpeedControl:
         label_rect = label_surface.get_rect(centerx=self.rect.centerx, top=self.rect.top + 2)
         surface.blit(label_surface, label_rect)
         
-        # Draw decrease button (rewind symbol: <<)
-        bg_color = self.BG_HOVER_COLOR if self.decrease_hovered else self.BG_COLOR
-        pygame.draw.rect(surface, bg_color, self.decrease_button_rect)
-        pygame.draw.rect(surface, self.BORDER_COLOR, self.decrease_button_rect, 2)
-        
-        # Draw double left triangles
-        icon_rect = self.decrease_button_rect.inflate(-12, -12)
-        mid_x = icon_rect.centerx
-        # Left triangle
-        left_triangle = [
-            (mid_x - 6, icon_rect.top),
-            (mid_x - 6, icon_rect.bottom),
-            (icon_rect.left, icon_rect.centery)
-        ]
-        # Right triangle
-        right_triangle = [
-            (mid_x + 2, icon_rect.top),
-            (mid_x + 2, icon_rect.bottom),
-            (mid_x - 4, icon_rect.centery)
-        ]
-        pygame.draw.polygon(surface, self.ICON_COLOR, left_triangle)
-        pygame.draw.polygon(surface, self.ICON_COLOR, right_triangle)
+        # Render buttons
+        self.decrease_button.render(surface)
+        self.increase_button.render(surface)
         
         # Draw text box with value
         pygame.draw.rect(surface, colors.WIDGET_BG_COLOR, self.text_rect)
@@ -310,29 +289,7 @@ class SpeedControl:
         text_surface = self.font.render(value_str, True, self.TEXT_COLOR)
         text_pos = text_surface.get_rect(center=self.text_rect.center)
         surface.blit(text_surface, text_pos)
-        
-        # Draw increase button (fast forward symbol: >>)
-        bg_color = self.BG_HOVER_COLOR if self.increase_hovered else self.BG_COLOR
-        pygame.draw.rect(surface, bg_color, self.increase_button_rect)
-        pygame.draw.rect(surface, self.BORDER_COLOR, self.increase_button_rect, 2)
-        
-        # Draw double right triangles
-        icon_rect = self.increase_button_rect.inflate(-12, -12)
-        mid_x = icon_rect.centerx
-        # Left triangle
-        left_triangle = [
-            (mid_x - 2, icon_rect.top),
-            (mid_x - 2, icon_rect.bottom),
-            (mid_x + 4, icon_rect.centery)
-        ]
-        # Right triangle
-        right_triangle = [
-            (mid_x + 6, icon_rect.top),
-            (mid_x + 6, icon_rect.bottom),
-            (icon_rect.right, icon_rect.centery)
-        ]
-        pygame.draw.polygon(surface, self.ICON_COLOR, left_triangle)
-        pygame.draw.polygon(surface, self.ICON_COLOR, right_triangle)
+
 
 class TemperatureSlider:
     """A slider control for adjusting simulation temperature.

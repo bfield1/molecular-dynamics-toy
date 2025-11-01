@@ -5,20 +5,19 @@ import pygame
 from typing import Optional, Tuple
 
 from molecular_dynamics_toy.data import colors
+from molecular_dynamics_toy.widgets.base import ToggleButton
 
 logger = logging.getLogger(__name__)
 
 
-class ElementButton:
+class ElementButton(ToggleButton):
     """A clickable button representing a chemical element.
     
     Attributes:
         symbol: Chemical element symbol (e.g., 'H', 'He').
-        rect: Rectangle defining button position and size.
-        selected: Whether this button is currently selected.
     """
     
-    # Colors
+    # Colors (override ToggleButton defaults)
     BG_COLOR = colors.ELEMENT_BG_COLOR
     BG_HOVER_COLOR = colors.ELEMENT_BG_HOVER_COLOR
     BG_SELECTED_COLOR = colors.ELEMENT_BG_SELECTED_COLOR
@@ -35,65 +34,28 @@ class ElementButton:
             symbol: Chemical element symbol.
             rect: Rectangle defining position and size.
         """
+        super().__init__(rect)
         self.symbol = symbol
-        self.rect = rect
-        self.selected = False
-        self.hovered = False
 
         # Scale font size based on button size
-        # Use ~80% of button height for font size
         font_size = min(max(12, int(self.rect.height * 0.8)), 24)
         self.font = pygame.font.Font(None, font_size)
         
-    def handle_click(self, pos: Tuple[int, int]) -> bool:
-        """Check if position is inside button and handle click.
-        
-        Args:
-            pos: Mouse position (x, y).
-            
-        Returns:
-            True if button was clicked.
-        """
-        if self.rect.collidepoint(pos):
-            self.selected = not self.selected
-            logger.debug(f"Element {self.symbol} {'selected' if self.selected else 'deselected'}")
-            return True
-        return False
-    
-    def handle_hover(self, pos: Tuple[int, int]):
-        """Update hover state based on mouse position.
-        
-        Args:
-            pos: Mouse position (x, y).
-        """
-        self.hovered = self.rect.collidepoint(pos)
+    def on_click(self):
+        """Toggle selection and log the change."""
+        super().on_click()  # Handles the toggle
+        logger.debug(f"Element {self.symbol} {'selected' if self.selected else 'deselected'}")
 
     def deselect(self):
         """Deselect this button."""
         self.selected = False
         
-    def render(self, surface: pygame.Surface):
-        """Render the button.
+    def render_content(self, surface: pygame.Surface):
+        """Render the element symbol text.
         
         Args:
             surface: Surface to render onto.
         """
-        # Draw background
-        if self.selected and self.hovered:
-            bg_color = self.BG_SELECTED_HOVER_COLOR
-        elif self.selected:
-            bg_color = self.BG_SELECTED_COLOR
-        elif self.hovered:
-            bg_color = self.BG_HOVER_COLOR
-        else:
-            bg_color = self.BG_COLOR
-        
-        pygame.draw.rect(surface, bg_color, self.rect)
-        
-        # Draw border
-        border_color = self.BORDER_SELECTED_COLOR if self.selected else self.BORDER_COLOR
-        pygame.draw.rect(surface, border_color, self.rect, 2)
-        
         # Draw symbol text
         text_color = self.TEXT_SELECTED_COLOR if self.selected else self.TEXT_COLOR
         text_surface = self.font.render(self.symbol, True, text_color)
