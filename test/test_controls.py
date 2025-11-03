@@ -2,7 +2,7 @@
 
 import pytest
 import pygame
-from molecular_dynamics_toy.widgets.controls import ControlsWidget, PlayPauseButton, ResetButton, SpeedControl, TemperatureSlider
+from molecular_dynamics_toy.widgets.controls import ControlsWidget, PlayPauseButton, ResetButton, SpeedControl, TemperatureSlider, CellSizeControl
 
 
 @pytest.fixture
@@ -727,3 +727,166 @@ def test_speed_control_float_display(pygame_init):
     
     # Value should still be 1.5
     assert control.value == 1.5
+
+
+def test_cell_size_control_initialization(pygame_init):
+    """Test that CellSizeControl initializes correctly."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect)
+    
+    assert control.rect == rect
+    assert control.cell_size == 20.0
+    assert control.min_size == 4.0
+
+
+def test_cell_size_control_custom_initial_size(pygame_init):
+    """Test that CellSizeControl can be initialized with custom size."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=30.0)
+    
+    assert control.cell_size == 30.0
+
+
+def test_cell_size_control_increase_by_one(pygame_init):
+    """Test increasing cell size by 1 Angstrom."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=20.0)
+    
+    # Click +1 button
+    control.handle_click(control.increase_buttons[0].rect.center)
+    
+    assert control.cell_size == 21.0
+
+
+def test_cell_size_control_increase_by_point_one(pygame_init):
+    """Test increasing cell size by 0.1 Angstrom."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=20.0)
+    
+    # Click +0.1 button
+    control.handle_click(control.increase_buttons[1].rect.center)
+    
+    assert abs(control.cell_size - 20.1) < 1e-9
+
+
+def test_cell_size_control_increase_by_point_zero_one(pygame_init):
+    """Test increasing cell size by 0.01 Angstrom."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=20.0)
+    
+    # Click +0.01 button
+    control.handle_click(control.increase_buttons[2].rect.center)
+    
+    assert abs(control.cell_size - 20.01) < 1e-9
+
+
+def test_cell_size_control_decrease_by_one(pygame_init):
+    """Test decreasing cell size by 1 Angstrom."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=20.0)
+    
+    # Click -1 button
+    control.handle_click(control.decrease_buttons[0].rect.center)
+    
+    assert control.cell_size == 19.0
+
+
+def test_cell_size_control_decrease_by_point_one(pygame_init):
+    """Test decreasing cell size by 0.1 Angstrom."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=20.0)
+    
+    # Click -0.1 button
+    control.handle_click(control.decrease_buttons[1].rect.center)
+    
+    assert abs(control.cell_size - 19.9) < 1e-9
+
+
+def test_cell_size_control_respects_minimum(pygame_init):
+    """Test that cell size cannot go below minimum."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=5.0, min_size=5.0)
+    
+    # Try to decrease below minimum
+    control.handle_click(control.decrease_buttons[0].rect.center)
+    
+    assert control.cell_size == 5.0
+
+
+def test_cell_size_control_multiple_increments(pygame_init):
+    """Test multiple increments work correctly."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect, initial_size=20.0)
+    
+    # +1, +0.1, +0.01
+    control.handle_click(control.increase_buttons[0].rect.center)
+    control.handle_click(control.increase_buttons[1].rect.center)
+    control.handle_click(control.increase_buttons[2].rect.center)
+    
+    assert abs(control.cell_size - 21.11) < 1e-9
+
+
+def test_cell_size_control_hover(pygame_init):
+    """Test that hovering updates button states."""
+    rect = pygame.Rect(0, 0, 300, 100)
+    control = CellSizeControl(rect)
+    
+    # Hover over +1 button
+    control.handle_hover(control.increase_buttons[0].rect.center)
+    assert control.increase_buttons[0].hovered is True
+    
+    # Hover outside
+    control.handle_hover((0, 0))
+    assert control.increase_buttons[0].hovered is False
+
+
+def test_controls_widget_has_cell_size_control(pygame_init):
+    """Test that ControlsWidget initializes with cell size control."""
+    
+    rect = pygame.Rect(0, 0, 500, 300)
+    widget = ControlsWidget(rect)
+    
+    assert widget.cell_size_control is not None
+    assert widget.cell_size == 20.0
+
+
+def test_controls_widget_cell_size_property(pygame_init):
+    """Test that cell_size property reflects control state."""
+    
+    rect = pygame.Rect(0, 0, 500, 300)
+    widget = ControlsWidget(rect)
+    
+    # Increase cell size
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': widget.cell_size_control.increase_buttons[0].rect.center}
+    )
+    widget.handle_event(event)
+    
+    assert widget.cell_size == 21.0
+
+
+def test_controls_widget_cell_size_preserved_on_resize(pygame_init):
+    """Test that cell size is preserved when widget is resized."""
+    
+    rect1 = pygame.Rect(0, 0, 500, 300)
+    widget = ControlsWidget(rect1)
+    
+    # Set cell size to 25.5
+    for _ in range(5):
+        widget.cell_size_control.handle_click(
+            widget.cell_size_control.increase_buttons[0].rect.center
+        )
+    for _ in range(5):
+        widget.cell_size_control.handle_click(
+            widget.cell_size_control.increase_buttons[1].rect.center
+        )
+    
+    assert abs(widget.cell_size - 25.5) < 1e-9
+    
+    # Resize
+    rect2 = pygame.Rect(0, 0, 600, 350)
+    widget.set_rect(rect2)
+    
+    # Cell size should be preserved
+    assert abs(widget.cell_size - 25.5) < 1e-9

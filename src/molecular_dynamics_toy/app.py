@@ -119,6 +119,13 @@ class MDApplication:
             self.simulation_widget.engine.temperature = self.controls_widget.temperature
             self.simulation_widget.engine.timestep = self.controls_widget.timestep
             
+            # Update cell size (preserving fractional coordinates)
+            new_cell_size = self.controls_widget.cell_size
+            old_cell = self.simulation_widget.engine.atoms.cell[0, 0]
+            if abs(new_cell_size - old_cell) > 1e-6:
+                self.simulation_widget.engine.atoms.set_cell([new_cell_size] * 3, scale_atoms=True)
+                logger.debug(f"Cell size updated to {new_cell_size:.2f} Å")
+            
         # Update simulation with play state and speed
         if self.simulation_widget and self.controls_widget:
             self.simulation_widget.update(

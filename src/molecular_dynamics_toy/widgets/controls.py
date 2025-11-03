@@ -5,7 +5,7 @@ import pygame
 from typing import Tuple
 
 from molecular_dynamics_toy.data import colors
-from molecular_dynamics_toy.widgets.base import Button
+from molecular_dynamics_toy.widgets.base import Button, TextButton
 
 logger = logging.getLogger(__name__)
 
@@ -447,6 +447,141 @@ class TemperatureSlider:
         pygame.draw.rect(surface, colors.BORDER_COLOR, slider_rect, 2)
 
 
+class CellSizeControl:
+    """A control for adjusting simulation cell size.
+    
+    Attributes:
+        rect: Rectangle defining control position and size.
+        cell_size: Current cell size in Angstroms.
+        min_size: Minimum allowed cell size.
+    """
+    
+    # Colors
+    TEXT_COLOR = colors.TEXT_COLOR
+    BORDER_COLOR = colors.CONTROL_BORDER_COLOR
+    
+    def __init__(self, rect: pygame.Rect, initial_size: float = 20.0, min_size: float = 4.0):
+        """Initialize the cell size control.
+        
+        Args:
+            rect: Rectangle defining position and size.
+            initial_size: Initial cell size in Angstroms.
+            min_size: Minimum allowed cell size in Angstroms.
+        """
+        self.rect = rect
+        self.cell_size = max(min_size, initial_size)
+        self.min_size = min_size
+        
+        # Layout parameters
+        self.label_height = 20
+        button_height = 20
+        button_width = 50
+        spacing = 2
+        
+        # Calculate positions
+        control_top = rect.top + self.label_height
+        control_height = rect.height - self.label_height
+        
+        # Text display in center
+        text_width = rect.width - 2 * (button_width + 10)
+        self.text_rect = pygame.Rect(
+            rect.left + button_width + 10,
+            control_top + (control_height - button_height * 3 - spacing * 2) // 2,
+            text_width,
+            button_height * 3 + spacing * 2
+        )
+        
+        # Left column (decrease buttons)
+        left_x = rect.left
+        buttons_top = self.text_rect.top
+        
+        # Right column (increase buttons)
+        right_x = rect.right - button_width
+        
+        # Create buttons for each increment
+        
+        self.decrease_buttons = [
+            TextButton(pygame.Rect(left_x, buttons_top, button_width, button_height), 
+                      "-1", font_size=16),
+            TextButton(pygame.Rect(left_x, buttons_top + button_height + spacing, button_width, button_height),
+                      "-0.1", font_size=16),
+            TextButton(pygame.Rect(left_x, buttons_top + 2 * (button_height + spacing), button_width, button_height),
+                      "-0.01", font_size=16),
+        ]
+        
+        self.increase_buttons = [
+            TextButton(pygame.Rect(right_x, buttons_top, button_width, button_height),
+                      "+1", font_size=16),
+            TextButton(pygame.Rect(right_x, buttons_top + button_height + spacing, button_width, button_height),
+                      "+0.1", font_size=16),
+            TextButton(pygame.Rect(right_x, buttons_top + 2 * (button_height + spacing), button_width, button_height),
+                      "+0.01", font_size=16),
+        ]
+        
+        self.increments = [1.0, 0.1, 0.01]
+        
+        self.font = pygame.font.Font(None, 24)
+        self.label_font = pygame.font.Font(None, 18)
+        
+    def handle_click(self, pos: Tuple[int, int]) -> bool:
+        """Check if position is inside control and handle click.
+        
+        Args:
+            pos: Mouse position (x, y).
+            
+        Returns:
+            True if control was clicked.
+        """
+        # Check decrease buttons
+        for i, button in enumerate(self.decrease_buttons):
+            if button.handle_click(pos):
+                self.cell_size = max(self.min_size, self.cell_size - self.increments[i])
+                logger.info(f"Cell size decreased to {self.cell_size:.2f} Å")
+                return True
+                
+        # Check increase buttons
+        for i, button in enumerate(self.increase_buttons):
+            if button.handle_click(pos):
+                self.cell_size += self.increments[i]
+                logger.info(f"Cell size increased to {self.cell_size:.2f} Å")
+                return True
+                
+        return False
+        
+    def handle_hover(self, pos: Tuple[int, int]):
+        """Update hover state based on mouse position.
+        
+        Args:
+            pos: Mouse position (x, y).
+        """
+        for button in self.decrease_buttons + self.increase_buttons:
+            button.handle_hover(pos)
+        
+    def render(self, surface: pygame.Surface):
+        """Render the control.
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        # Draw label
+        label_surface = self.label_font.render("Cell Size (Å)", True, self.TEXT_COLOR)
+        label_rect = label_surface.get_rect(centerx=self.rect.centerx, top=self.rect.top + 2)
+        surface.blit(label_surface, label_rect)
+        
+        # Render buttons
+        for button in self.decrease_buttons + self.increase_buttons:
+            button.render(surface)
+        
+        # Draw text box with cell size
+        pygame.draw.rect(surface, colors.WIDGET_BG_COLOR, self.text_rect)
+        pygame.draw.rect(surface, self.BORDER_COLOR, self.text_rect, 2)
+        
+        value_str = f"{self.cell_size:.2f}"
+        text_surface = self.font.render(value_str, True, self.TEXT_COLOR)
+        text_pos = text_surface.get_rect(center=self.text_rect.center)
+        surface.blit(text_surface, text_pos)
+
+
 class ControlsWidget:
     """Widget for simulation controls (play/pause, speed, temperature).
     
@@ -457,6 +592,7 @@ class ControlsWidget:
         steps_per_frame: Number of MD steps per frame.
         timestep: MD timestep in femtoseconds.
         temperature: Target temperature in Kelvin.
+        cell_size: Simulation cell size in Angstroms.
     """
     
     BG_COLOR = colors.WIDGET_BG_COLOR
@@ -473,6 +609,7 @@ class ControlsWidget:
         self.steps_control = None
         self.timestep_control = None
         self.temperature_slider = None
+        self.cell_size_control = None
         self.reset_requested = False
         
         self._create_controls()
@@ -485,6 +622,7 @@ class ControlsWidget:
         old_steps = self.steps_control.value if self.steps_control else 1
         old_timestep = self.timestep_control.value if self.timestep_control else 1
         old_temp = self.temperature_slider.temperature if self.temperature_slider else 300.0
+        old_cell_size = self.cell_size_control.cell_size if self.cell_size_control else 20.0
         
         margin = 20
         button_size = 60
@@ -549,6 +687,16 @@ class ControlsWidget:
         )
         self.temperature_slider = TemperatureSlider(slider_rect, initial_temp=old_temp)
         
+        # Create cell size control
+        cell_size_top = slider_top + 60 + spacing
+        cell_size_rect = pygame.Rect(
+            self.rect.left + margin,
+            cell_size_top,
+            200,
+            80
+        )
+        self.cell_size_control = CellSizeControl(cell_size_rect, initial_size=old_cell_size)
+        
     @property
     def playing(self) -> bool:
         """Get current play/pause state."""
@@ -568,6 +716,11 @@ class ControlsWidget:
     def temperature(self) -> float:
         """Get current temperature in Kelvin."""
         return self.temperature_slider.temperature if self.temperature_slider else 300.0
+    
+    @property
+    def cell_size(self) -> float:
+        """Get current cell size in Angstroms."""
+        return self.cell_size_control.cell_size if self.cell_size_control else 20.0
         
     def handle_event(self, event: pygame.event.Event):
         """Handle pygame events.
@@ -588,6 +741,8 @@ class ControlsWidget:
                     self.timestep_control.handle_click(event.pos)
                 if self.temperature_slider:
                     self.temperature_slider.handle_click(event.pos)
+                if self.cell_size_control:
+                    self.cell_size_control.handle_click(event.pos)
                     
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left click release
@@ -606,6 +761,8 @@ class ControlsWidget:
             if self.temperature_slider:
                 self.temperature_slider.handle_hover(event.pos)
                 self.temperature_slider.handle_drag(event.pos)
+            if self.cell_size_control:
+                self.cell_size_control.handle_hover(event.pos)
                 
     def update(self):
         """Update widget state (called each frame)."""
@@ -631,6 +788,8 @@ class ControlsWidget:
             self.timestep_control.render(surface)
         if self.temperature_slider:
             self.temperature_slider.render(surface)
+        if self.cell_size_control:
+            self.cell_size_control.render(surface)
             
     def set_rect(self, rect: pygame.Rect):
         """Update widget position and size, recalculating control positions.

@@ -177,3 +177,49 @@ class ToggleButton(Button):
         
         # Draw content (override in subclasses)
         self.render_content(surface)
+
+
+class TextButton(Button):
+    """A button that displays text.
+    
+    Attributes:
+        text: Text to display on the button.
+    """
+    
+    TEXT_COLOR = colors.TEXT_COLOR
+    TEXT_HOVER_COLOR = colors.TEXT_COLOR
+    TEXT_DISABLED_COLOR = colors.TEXT_DISABLED_COLOR
+    
+    def __init__(self, rect: pygame.Rect, text: str, 
+                 callback: Optional[Callable[[], None]] = None,
+                 enabled: bool = True, font_size: int = 20):
+        """Initialize the text button.
+        
+        Args:
+            rect: Rectangle defining position and size.
+            text: Text to display.
+            callback: Optional function to call when clicked.
+            enabled: Whether button starts enabled.
+            font_size: Font size for the text.
+        """
+        super().__init__(rect, callback, enabled)
+        self.text = text
+        self.font = pygame.font.Font(None, font_size)
+        
+    def render_content(self, surface: pygame.Surface):
+        """Render the text content.
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        # Choose text color based on state
+        if not self.enabled:
+            text_color = self.TEXT_DISABLED_COLOR
+        elif self.hovered:
+            text_color = self.TEXT_HOVER_COLOR
+        else:
+            text_color = self.TEXT_COLOR
+            
+        text_surface = self.font.render(self.text, True, text_color)
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        surface.blit(text_surface, text_rect)
