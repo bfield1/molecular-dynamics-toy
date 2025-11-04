@@ -174,46 +174,81 @@ def create_copper_fcc() -> Atoms:
     return atoms
 
 def create_ice_crystal() -> Atoms:
-    """Create an ice crystal structure (simplified cubic ice).
+    """Create an ice crystal structure (ice Ih, slightly distorted to cubic).
     
     Returns:
-        Atoms object containing simplified ice structure in cubic cell.
+        Atoms object containing ice Ih structure in cubic cell.
     """
+    # Ice Ih has a hexagonal structure with specific hydrogen bonding
+    # We'll create a small ice Ih structure and then fit it to a cubic cell
     
+    # Ice Ih parameters
+    a = 4.52  # Hexagonal a parameter (Angstrom)
+    c = 7.37  # Hexagonal c parameter (Angstrom)
     
-    # Create a simplified cubic ice structure
-    # Real ice Ih is hexagonal, but we'll make a cubic approximation
-    # O-O distance in ice is ~2.76 Angstrom
-    a = 2.76  # O-O lattice parameter
+    # Ratio c/a ≈ 1.63
+    # To get close to cubic, we want dimensions that are similar
+    # A 2x2x1 supercell gives: 2a × 2a × c ≈ 9.04 × 9.04 × 7.37
+    # This is reasonably close to cubic
     
-    # Create oxygen positions in a cubic arrangement
-    o_positions = []
-    for i in range(2):
-        for j in range(2):
-            for k in range(2):
-                o_positions.append([i * a, j * a, k * a])
+    # Oxygen positions in hexagonal ice unit cell (fractional)
+    o_frac = np.array([
+        [0.0, 0.0, 0.0625],
+        [0.0, 0.0, 0.5625],
+        [1/3, 2/3, 0.0625],
+        [2/3, 1/3, 0.5625],
+    ])
     
-    atoms = Atoms('O' + str(len(o_positions)), positions=o_positions)
+    # Hexagonal cell vectors
+    cell_hex = np.array([
+        [a, 0, 0],
+        [-a/2, a*np.sqrt(3)/2, 0],
+        [0, 0, c]
+    ])
     
-    # Add hydrogens in approximate tetrahedral positions
-    # Each O has ~4 H neighbors in ice, but we'll add 2 per O for simplicity
-    # O-H bond length is ~0.96 Angstrom
+    # Convert to Cartesian
+    o_cart = np.dot(o_frac, cell_hex)
+    
+    # Create atoms object with hexagonal cell
+    atoms = Atoms('O4', positions=o_cart, cell=cell_hex, pbc=True)
+    
+    # Add hydrogens with ice Ih geometry (simplified)
+    # O-H bond length ~0.96 Å, tetrahedral angle ~109.5°
     h_positions = []
-    for pos in o_positions:
-        # Add H atoms at reasonable bond distances and angles
-        h_positions.append(pos + np.array([0.96, 0, 0]))
-        h_positions.append(pos + np.array([0, 0.96, 0]))
+    bond_length = 0.96
     
-    h_atoms = Atoms('H' + str(len(h_positions)), positions=h_positions)
+    # Approximate hydrogen positions based on ice rules
+    # (2 close H per O in tetrahedral arrangement)
+    for i, pos in enumerate(o_cart):
+        if i == 0:
+            h_positions.append(pos + np.array([bond_length, 0, 0]))
+            h_positions.append(pos + np.array([-bond_length/2, bond_length*np.sqrt(3)/2, 0]))
+        elif i == 1:
+            h_positions.append(pos + np.array([0, bond_length, 0]))
+            h_positions.append(pos + np.array([0, -bond_length/2, bond_length*np.sqrt(3)/2]))
+        elif i == 2:
+            h_positions.append(pos + np.array([bond_length, 0, 0]))
+            h_positions.append(pos + np.array([0, 0, bond_length]))
+        else:
+            h_positions.append(pos + np.array([0, bond_length, 0]))
+            h_positions.append(pos + np.array([bond_length, 0, 0]))
+    
+    h_atoms = Atoms('H8', positions=h_positions)
     atoms += h_atoms
     
-    # Set cubic cell
-    cell_size = 2 * a
-    atoms.set_cell([cell_size, cell_size, cell_size])
-    atoms.center()
-    atoms.pbc = True
+    # Make 2x2x1 supercell for better cubic approximation
+    atoms = atoms.repeat((2, 2, 1))
     
-    logger.info("Created simplified ice crystal preset")
+    # Now convert to cubic cell
+    # Average the dimensions
+    current_cell = atoms.get_cell()
+    dims = [np.linalg.norm(current_cell[i]) for i in range(3)]
+    avg_dim = np.mean(dims)
+    
+    # Set to cubic cell with average dimension
+    atoms.set_cell([avg_dim, avg_dim, avg_dim], scale_atoms=True)
+    
+    logger.info("Created ice Ih crystal preset (2x2x1 supercell, cubic)")
     return atoms
 
 # Registry of all available presets
