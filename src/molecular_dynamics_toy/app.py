@@ -9,44 +9,12 @@ from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
 from molecular_dynamics_toy.widgets.simulation import SimulationWidget
 from molecular_dynamics_toy.widgets.base import Menu
+from molecular_dynamics_toy.widgets.menus import PresetsMenu
+from molecular_dynamics_toy.data.presets import create_preset
 from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.calculators import get_calculator
 
 logger = logging.getLogger(__name__)
-
-
-def _create_preset_menu() -> Menu:
-    """Create the preset loading menu.
-    
-    Returns:
-        Menu instance for loading presets.
-    """
-    
-    menu_width = 300
-    menu_height = 400
-    menu_rect = pygame.Rect(0, 0, menu_width, menu_height)
-    
-    menu = Menu(menu_rect, title="Load Preset")
-    
-    # Add dummy items for testing
-    menu.add_item("Water molecule", lambda: logger.info("Load water"))
-    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
-    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
-    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
-    menu.add_item("Water molecule", lambda: logger.info("Load water"))
-    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
-    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
-    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
-    menu.add_item("Water molecule", lambda: logger.info("Load water"))
-    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
-    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
-    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
-    menu.add_item("Water molecule", lambda: logger.info("Load water"))
-    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
-    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
-    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
-    
-    return menu
 
 
 class MDApplication:
@@ -108,7 +76,7 @@ class MDApplication:
         self.periodic_table_widget = PeriodicTableWidget(self.PERIODIC_TABLE_RECT)
         self.controls_widget = ControlsWidget(self.CONTROLS_RECT)
         # Create menus
-        self.preset_menu = _create_preset_menu()
+        self.preset_menu = PresetsMenu(pygame.Rect(0, 0, 300, 400), load_callback=self._load_preset)
         
         self._update_layout()
 
@@ -295,6 +263,41 @@ class MDApplication:
         # Re-center menus after resize
         if self.preset_menu:
             self.preset_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+
+    def _load_preset(self, preset_id: str):
+        """Load a preset configuration into the simulation.
+        
+        Args:
+            preset_id: Preset identifier.
+        """
+        
+        try:
+            atoms = create_preset(preset_id)
+            
+            # Verify cubic cell
+            cell = atoms.get_cell()
+            if not (abs(cell[0, 0] - cell[1, 1]) < 1e-6 and 
+                    abs(cell[1, 1] - cell[2, 2]) < 1e-6 and
+                    abs(cell[0, 1]) < 1e-6 and abs(cell[0, 2]) < 1e-6 and 
+                    abs(cell[1, 0]) < 1e-6 and abs(cell[1, 2]) < 1e-6 and
+                    abs(cell[2, 0]) < 1e-6 and abs(cell[2, 1]) < 1e-6):
+                logger.error(f"Preset {preset_id} does not have a cubic cell")
+                return
+                
+            # Get cell size
+            cell_size = cell[0, 0]
+            
+            # Update simulation
+            if self.simulation_widget:
+                self.simulation_widget.engine.atoms = atoms
+                logger.info(f"Loaded preset {preset_id}: {len(atoms)} atoms, cell size {cell_size:.2f} Å")
+                
+            # Update controls to match
+            if self.controls_widget:
+                self.controls_widget.cell_size_control.cell_size = cell_size
+                
+        except Exception as e:
+            logger.error(f"Failed to load preset {preset_id}: {e}")
 
 
 def main():
