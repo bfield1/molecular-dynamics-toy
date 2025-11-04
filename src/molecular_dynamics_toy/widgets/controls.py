@@ -5,7 +5,7 @@ import pygame
 from typing import Tuple
 
 from molecular_dynamics_toy.data import colors
-from molecular_dynamics_toy.widgets.base import Button, TextButton, Menu
+from molecular_dynamics_toy.widgets.base import Button, TextButton, Menu, Slider
 
 logger = logging.getLogger(__name__)
 
@@ -291,26 +291,20 @@ class SpeedControl:
         surface.blit(text_surface, text_pos)
 
 
-class TemperatureSlider:
+class TemperatureSlider(Slider):
     """A slider control for adjusting simulation temperature.
     
     Attributes:
-        rect: Rectangle defining control position and size.
         temperature: Temperature in Kelvin.
         min_temp: Minimum temperature.
         max_temp: Maximum temperature.
-        dragging: Whether slider is currently being dragged.
     """
     
-    # Colors
-    BG_COLOR = colors.CONTROL_BG_COLOR
-    TRACK_COLOR = (180, 180, 180)
-    SLIDER_COLOR = (100, 100, 100)
-    SLIDER_HOVER_COLOR = (70, 70, 70)
+    # Colors (inherit from Slider)
     TEXT_COLOR = colors.TEXT_COLOR
     
     def __init__(self, rect: pygame.Rect, initial_temp: float = 300.0, 
-                 min_temp: float = 0.0, max_temp: float = 1000.0):
+                min_temp: float = 0.0, max_temp: float = 1000.0):
         """Initialize the temperature slider.
         
         Args:
@@ -319,17 +313,22 @@ class TemperatureSlider:
             min_temp: Minimum temperature in Kelvin.
             max_temp: Maximum temperature in Kelvin.
         """
-        self.rect = rect
-        self.temperature = initial_temp
         self.min_temp = min_temp
         self.max_temp = max_temp
-        self.dragging = False
-        self.hovered = False
+        self.temperature = initial_temp
+        
+        # Calculate initial normalized value
+        initial_value = (initial_temp - min_temp) / (max_temp - min_temp)
+        
+        super().__init__(rect, initial_value, orientation='horizontal')
         
         # Layout
         self.label_height = 25
         self.slider_height = 20
-        self.slider_width = 15
+        
+        # Override handle dimensions for temperature slider
+        self.handle_width = 15
+        self.handle_height = self.slider_height
         
         self.font = pygame.font.Font(None, 22)
         
@@ -343,85 +342,16 @@ class TemperatureSlider:
             self.slider_height
         )
         
-    def _get_slider_rect(self) -> pygame.Rect:
-        """Get the rectangle for the slider handle."""
-        track_rect = self._get_track_rect()
-        
-        # Calculate slider position based on temperature
-        normalized = (self.temperature - self.min_temp) / (self.max_temp - self.min_temp)
-        normalized = max(0.0, min(1.0, normalized))  # Clamp to [0, 1]
-        
-        slider_x = track_rect.left + normalized * (track_rect.width - self.slider_width)
-        slider_y = track_rect.centery - self.slider_height // 2
-        
-        return pygame.Rect(slider_x, slider_y, self.slider_width, self.slider_height)
-        
-    def handle_click(self, pos: Tuple[int, int]) -> bool:
-        """Check if position is inside slider and start dragging.
-        
-        Args:
-            pos: Mouse position (x, y).
-            
-        Returns:
-            True if slider was clicked.
-        """
-        slider_rect = self._get_slider_rect()
-        if slider_rect.collidepoint(pos):
-            self.dragging = True
-            return True
-        
-        # Also allow clicking on track to jump to position
-        track_rect = self._get_track_rect()
-        if track_rect.collidepoint(pos):
-            self._update_from_position(pos[0])
-            self.dragging = True
-            return True
-            
-        return False
-        
-    def handle_release(self):
-        """Handle mouse button release."""
-        self.dragging = False
-        
-    def handle_drag(self, pos: Tuple[int, int]):
-        """Handle mouse drag to update slider position.
-        
-        Args:
-            pos: Mouse position (x, y).
-        """
-        if self.dragging:
-            self._update_from_position(pos[0])
-            
-    def _update_from_position(self, x: int):
-        """Update temperature based on x position.
-        
-        Args:
-            x: X coordinate on screen.
-        """
-        track_rect = self._get_track_rect()
-        
-        # Convert x position to normalized value [0, 1]
-        normalized = (x - track_rect.left) / track_rect.width
-        normalized = max(0.0, min(1.0, normalized))
-        
-        # Convert to temperature
+    def on_value_changed(self):
+        """Update temperature when slider value changes."""
         old_temp = self.temperature
-        self.temperature = self.min_temp + normalized * (self.max_temp - self.min_temp)
+        self.temperature = self.min_temp + self.value * (self.max_temp - self.min_temp)
         
         if abs(self.temperature - old_temp) > 0.5:  # Log only significant changes
             logger.debug(f"Temperature set to {self.temperature:.1f} K")
-            
-    def handle_hover(self, pos: Tuple[int, int]):
-        """Update hover state based on mouse position.
-        
-        Args:
-            pos: Mouse position (x, y).
-        """
-        slider_rect = self._get_slider_rect()
-        self.hovered = slider_rect.collidepoint(pos)
         
     def render(self, surface: pygame.Surface):
-        """Render the slider.
+        """Render the temperature slider.
         
         Args:
             surface: Surface to render onto.
@@ -435,16 +365,8 @@ class TemperatureSlider:
         )
         surface.blit(label_surface, label_rect)
         
-        # Draw track
-        track_rect = self._get_track_rect()
-        pygame.draw.rect(surface, self.TRACK_COLOR, track_rect)
-        pygame.draw.rect(surface, colors.BORDER_COLOR, track_rect, 1)
-        
-        # Draw slider handle
-        slider_rect = self._get_slider_rect()
-        slider_color = self.SLIDER_HOVER_COLOR if (self.hovered or self.dragging) else self.SLIDER_COLOR
-        pygame.draw.rect(surface, slider_color, slider_rect)
-        pygame.draw.rect(surface, colors.BORDER_COLOR, slider_rect, 2)
+        # Draw slider (track and handle)
+        super().render(surface)
 
 
 class CellSizeControl:

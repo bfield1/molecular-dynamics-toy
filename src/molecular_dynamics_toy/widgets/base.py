@@ -225,6 +225,157 @@ class TextButton(Button):
         surface.blit(text_surface, text_rect)
 
 
+class Slider:
+    """Base class for slider controls.
+    
+    A slider allows selecting a value by dragging a handle along a track.
+    
+    Attributes:
+        rect: Rectangle defining slider position and size.
+        value: Current value (normalized to 0-1 range).
+        dragging: Whether slider is currently being dragged.
+        hovered: Whether mouse is over the slider handle.
+        orientation: 'horizontal' or 'vertical'.
+    """
+    
+    # Colors
+    BG_COLOR = colors.CONTROL_BG_COLOR
+    TRACK_COLOR = colors.SLIDER_TRACK_COLOR
+    HANDLE_COLOR = colors.SLIDER_HANDLE_COLOR
+    HANDLE_HOVER_COLOR = colors.SLIDER_HANDLE_HOVER_COLOR
+    
+    def __init__(self, rect: pygame.Rect, initial_value: float = 0.5,
+                 orientation: str = 'horizontal'):
+        """Initialize the slider.
+        
+        Args:
+            rect: Rectangle defining position and size.
+            initial_value: Initial value (0-1 normalized).
+            orientation: 'horizontal' or 'vertical'.
+        """
+        self.rect = rect
+        self.value = max(0.0, min(1.0, initial_value))
+        self.orientation = orientation
+        self.dragging = False
+        self.hovered = False
+        
+        # Handle dimensions
+        if orientation == 'horizontal':
+            self.handle_width = 15
+            self.handle_height = rect.height
+        else:  # vertical
+            self.handle_width = rect.width
+            self.handle_height = 15
+            
+    def _get_track_rect(self) -> pygame.Rect:
+        """Get the rectangle for the slider track.
+        
+        Returns:
+            Rectangle for the track.
+        """
+        return self.rect.copy()
+        
+    def _get_handle_rect(self) -> pygame.Rect:
+        """Get the rectangle for the slider handle.
+        
+        Returns:
+            Rectangle for the handle based on current value.
+        """
+        track_rect = self._get_track_rect()
+        
+        if self.orientation == 'horizontal':
+            handle_x = track_rect.left + self.value * (track_rect.width - self.handle_width)
+            handle_y = track_rect.top
+            return pygame.Rect(handle_x, handle_y, self.handle_width, self.handle_height)
+        else:  # vertical
+            handle_x = track_rect.left
+            handle_y = track_rect.top + self.value * (track_rect.height - self.handle_height)
+            return pygame.Rect(handle_x, handle_y, self.handle_width, self.handle_height)
+            
+    def handle_click(self, pos: Tuple[int, int]) -> bool:
+        """Check if position is inside slider and start dragging.
+        
+        Args:
+            pos: Mouse position (x, y).
+            
+        Returns:
+            True if slider was clicked.
+        """
+        handle_rect = self._get_handle_rect()
+        if handle_rect.collidepoint(pos):
+            self.dragging = True
+            return True
+        
+        # Also allow clicking on track to jump to position
+        track_rect = self._get_track_rect()
+        if track_rect.collidepoint(pos):
+            self._update_from_position(pos)
+            self.dragging = True
+            return True
+            
+        return False
+        
+    def handle_release(self):
+        """Handle mouse button release."""
+        self.dragging = False
+        
+    def handle_drag(self, pos: Tuple[int, int]):
+        """Handle mouse drag to update slider position.
+        
+        Args:
+            pos: Mouse position (x, y).
+        """
+        if self.dragging:
+            self._update_from_position(pos)
+            
+    def _update_from_position(self, pos: Tuple[int, int]):
+        """Update value based on position.
+        
+        Args:
+            pos: Mouse position (x, y).
+        """
+        track_rect = self._get_track_rect()
+        
+        if self.orientation == 'horizontal':
+            normalized = (pos[0] - track_rect.left) / track_rect.width
+        else:  # vertical
+            normalized = (pos[1] - track_rect.top) / track_rect.height
+            
+        self.value = max(0.0, min(1.0, normalized))
+        self.on_value_changed()
+            
+    def on_value_changed(self):
+        """Called when value changes. Override in subclasses for custom behavior."""
+        pass
+            
+    def handle_hover(self, pos: Tuple[int, int]):
+        """Update hover state based on mouse position.
+        
+        Args:
+            pos: Mouse position (x, y).
+        """
+        handle_rect = self._get_handle_rect()
+        self.hovered = handle_rect.collidepoint(pos)
+        
+    def render(self, surface: pygame.Surface):
+        """Render the slider.
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        # Draw track
+        track_rect = self._get_track_rect()
+        pygame.draw.rect(surface, self.TRACK_COLOR, track_rect)
+        pygame.draw.rect(surface, colors.BORDER_COLOR, track_rect, 1)
+        
+        # Draw handle
+        handle_rect = self._get_handle_rect()
+        handle_color = self.HANDLE_HOVER_COLOR if (self.hovered or self.dragging) else self.HANDLE_COLOR
+        pygame.draw.rect(surface, handle_color, handle_rect)
+        pygame.draw.rect(surface, colors.BORDER_COLOR, handle_rect, 2)
+
+
+
 class MenuItem(TextButton):
     """A menu item button.
     

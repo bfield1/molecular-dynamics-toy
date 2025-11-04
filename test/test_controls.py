@@ -427,7 +427,7 @@ def test_temperature_slider_click_starts_drag(pygame_init):
     rect = pygame.Rect(10, 10, 400, 60)
     slider = TemperatureSlider(rect)
     
-    slider_rect = slider._get_slider_rect()
+    slider_rect = slider._get_handle_rect()
     clicked = slider.handle_click(slider_rect.center)
     
     assert clicked is True
@@ -439,7 +439,7 @@ def test_temperature_slider_release_stops_drag(pygame_init):
     rect = pygame.Rect(10, 10, 400, 60)
     slider = TemperatureSlider(rect)
     
-    slider_rect = slider._get_slider_rect()
+    slider_rect = slider._get_handle_rect()
     slider.handle_click(slider_rect.center)
     assert slider.dragging is True
     
@@ -468,7 +468,7 @@ def test_temperature_slider_drag_updates_temperature(pygame_init):
     rect = pygame.Rect(10, 10, 400, 60)
     slider = TemperatureSlider(rect, initial_temp=300.0)
     
-    slider_rect = slider._get_slider_rect()
+    slider_rect = slider._get_handle_rect()
     slider.handle_click(slider_rect.center)
     
     # Drag to different position
@@ -496,7 +496,7 @@ def test_temperature_slider_hover(pygame_init):
     rect = pygame.Rect(10, 10, 400, 60)
     slider = TemperatureSlider(rect)
     
-    slider_rect = slider._get_slider_rect()
+    slider_rect = slider._get_handle_rect()
     
     # Hover over slider
     slider.handle_hover(slider_rect.center)
@@ -575,7 +575,7 @@ def test_controls_widget_temperature_drag(pygame_init):
     rect = pygame.Rect(0, 0, 500, 250)
     widget = ControlsWidget(rect)
     
-    slider_rect = widget.temperature_slider._get_slider_rect()
+    slider_rect = widget.temperature_slider._get_handle_rect()
     
     # Start drag
     mousedown = pygame.event.Event(
