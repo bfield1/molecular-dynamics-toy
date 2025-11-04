@@ -677,7 +677,7 @@ class Menu:
         
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle pygame events.
-        
+
         Args:
             event: Pygame event to process.
             
@@ -720,6 +720,16 @@ class Menu:
             if event.button == 1:
                 if self.scrollbar:
                     self.scrollbar.handle_release()
+                    
+        elif event.type == pygame.MOUSEWHEEL:
+            # Handle mouse wheel scrolling
+            if self.scrollbar and self.rect.collidepoint(pygame.mouse.get_pos()):
+                # event.y is positive for scroll up, negative for scroll down
+                scroll_amount = -event.y * 0.05  # Invert and scale
+                self.scroll_offset = max(0.0, min(1.0, self.scroll_offset + scroll_amount))
+                self.scrollbar.value = self.scroll_offset
+                self._update_item_positions()
+                return True
                     
         elif event.type == pygame.MOUSEMOTION:
             # Update hover states only for menu elements
