@@ -472,8 +472,7 @@ class Menu:
                 item.handle_hover(event.pos)
                 
         # Consume all mouse events when menu is visible
-        #return True
-        return False
+        return True
         
     def render(self, surface: pygame.Surface):
         """Render the menu.

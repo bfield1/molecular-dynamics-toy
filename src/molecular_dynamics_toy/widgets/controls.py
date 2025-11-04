@@ -644,6 +644,7 @@ class ControlsWidget:
         timestep: MD timestep in femtoseconds.
         temperature: Target temperature in Kelvin.
         cell_size: Simulation cell size in Angstroms.
+        open_preset_menu_requested: True if preset menu should be opened.
     """
     
     BG_COLOR = colors.WIDGET_BG_COLOR
@@ -662,11 +663,10 @@ class ControlsWidget:
         self.temperature_slider = None
         self.cell_size_control = None
         self.load_preset_button = None
-        self.preset_menu = None
         self.reset_requested = False
+        self.open_preset_menu_requested = False
         
         self._create_controls()
-        self._create_preset_menu()
         logger.info("ControlsWidget initialized")
         
     def _create_controls(self):
@@ -760,33 +760,6 @@ class ControlsWidget:
         )
         self.load_preset_button = LoadPresetButton(load_preset_rect)
     
-    def _create_preset_menu(self):
-        """Create the preset loading menu."""
-        # Center menu in application window (will be repositioned by parent)
-        menu_width = 300
-        menu_height = 400
-        
-        # Create menu at placeholder position (will be centered by app)
-        menu_rect = pygame.Rect(0, 0, menu_width, menu_height)
-        
-        self.preset_menu = Menu(menu_rect, title="Load Preset")
-        
-        # Add dummy items for testing
-        self.preset_menu.add_item("Water molecule", lambda: logger.info("Load water"))
-        self.preset_menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
-        self.preset_menu.add_item("FCC gold", lambda: logger.info("Load gold"))
-        self.preset_menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
-
-    def center_preset_menu(self, app_width: int, app_height: int):
-        """Center the preset menu in the application window.
-        
-        Args:
-            app_width: Application window width.
-            app_height: Application window height.
-        """
-        if self.preset_menu:
-            self.preset_menu.center(app_width, app_height)
-    
     @property
     def playing(self) -> bool:
         """Get current play/pause state."""
@@ -818,10 +791,6 @@ class ControlsWidget:
         Args:
             event: Pygame event to process.
         """
-        # Menu gets priority for event handling
-        if self.preset_menu and self.preset_menu.handle_event(event):
-            return  # Event was consumed by menu
-
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
                 if self.play_pause_button:
@@ -839,7 +808,7 @@ class ControlsWidget:
                     self.cell_size_control.handle_click(event.pos)     
                 if self.load_preset_button:
                     if self.load_preset_button.handle_click(event.pos):
-                        self.preset_menu.open()
+                        self.open_preset_menu_requested = True
                     
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left click release
@@ -891,10 +860,6 @@ class ControlsWidget:
             self.cell_size_control.render(surface)
         if self.load_preset_button:
             self.load_preset_button.render(surface)
-        
-        # Draw menu on top
-        if self.preset_menu:
-            self.preset_menu.render(surface)
             
     def set_rect(self, rect: pygame.Rect):
         """Update widget position and size, recalculating control positions.

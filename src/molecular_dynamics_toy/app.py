@@ -8,10 +8,33 @@ import sys
 from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
 from molecular_dynamics_toy.widgets.simulation import SimulationWidget
+from molecular_dynamics_toy.widgets.base import Menu
 from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.calculators import get_calculator
 
 logger = logging.getLogger(__name__)
+
+
+def _create_preset_menu() -> Menu:
+    """Create the preset loading menu.
+    
+    Returns:
+        Menu instance for loading presets.
+    """
+    
+    menu_width = 300
+    menu_height = 400
+    menu_rect = pygame.Rect(0, 0, menu_width, menu_height)
+    
+    menu = Menu(menu_rect, title="Load Preset")
+    
+    # Add dummy items for testing
+    menu.add_item("Water molecule", lambda: logger.info("Load water"))
+    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
+    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
+    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
+    
+    return menu
 
 
 class MDApplication:
@@ -26,6 +49,7 @@ class MDApplication:
         running: Flag indicating if application is running.
         fps: Target frames per second.
         show_fps: Whether to display FPS counter.
+        preset_menu: Menu for loading preset configurations.
     """
     
     # Window dimensions
@@ -71,6 +95,8 @@ class MDApplication:
         self.simulation_widget = SimulationWidget(self.SIMULATION_RECT, calculator=get_calculator(calculator))
         self.periodic_table_widget = PeriodicTableWidget(self.PERIODIC_TABLE_RECT)
         self.controls_widget = ControlsWidget(self.CONTROLS_RECT)
+        # Create menus
+        self.preset_menu = _create_preset_menu()
         
         self._update_layout()
 
@@ -91,7 +117,11 @@ class MDApplication:
                 self.WINDOW_HEIGHT = event.h
                 self._update_layout()
                 logger.debug(f"Window resized to {event.w}x{event.h}")
-                    
+
+            # Menus get priority for event handling
+            if self.preset_menu and self.preset_menu.handle_event(event):
+                continue  # Event consumed by menu
+
             # Pass events to widgets when they exist
             if self.simulation_widget:
                 self.simulation_widget.handle_event(event)
@@ -133,6 +163,11 @@ class MDApplication:
                 self.controls_widget.steps_per_frame
             )
         
+        # Handle menu open requests
+        if self.controls_widget and self.controls_widget.open_preset_menu_requested:
+            self.preset_menu.open()
+            self.controls_widget.open_preset_menu_requested = False
+        
     def render(self):
         """Render the application.
         
@@ -148,6 +183,10 @@ class MDApplication:
             self.periodic_table_widget.render(self.screen)
         if self.controls_widget:
             self.controls_widget.render(self.screen)
+        
+        # Render menus on top
+        if self.preset_menu:
+            self.preset_menu.render(self.screen)
 
         # Draw FPS counter
         if self.show_fps:
@@ -237,8 +276,9 @@ class MDApplication:
             self.simulation_widget.set_rect(self.SIMULATION_RECT)
         if self.controls_widget:
             self.controls_widget.set_rect(self.CONTROLS_RECT)
-            # Re-center menu after resize
-            self.controls_widget.center_preset_menu(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        # Re-center menus after resize
+        if self.preset_menu:
+            self.preset_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
 
 
 def main():
