@@ -661,7 +661,7 @@ class ControlsWidget:
             self.rect.width - 2 * margin,
             60
         )
-        self.temperature_slider = TemperatureSlider(slider_rect, initial_temp=old_temp)
+        self.temperature_slider = TemperatureSlider(slider_rect, initial_temp=old_temp, max_temp=2000)
         
         # Create cell size control
         cell_size_top = slider_top + 60 + spacing

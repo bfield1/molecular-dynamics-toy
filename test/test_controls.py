@@ -555,12 +555,12 @@ def test_controls_widget_temperature_preserved_on_resize(pygame_init):
     rect1 = pygame.Rect(0, 0, 500, 250)
     widget = ControlsWidget(rect1)
     
-    # Set temperature to 750K
+    # Set temperature to 75% of max
     track_rect = widget.temperature_slider._get_track_rect()
     widget.temperature_slider.handle_click((track_rect.left + track_rect.width * 0.75, track_rect.centery))
     
     temp_before = widget.temperature
-    assert 700 < temp_before < 800  # Around 750K
+    assert 0.7 * widget.temperature_slider.max_temp < temp_before < 0.8 * widget.temperature_slider.max_temp
     
     # Resize
     rect2 = pygame.Rect(0, 0, 600, 300)
@@ -594,7 +594,7 @@ def test_controls_widget_temperature_drag(pygame_init):
     widget.handle_event(mousemove)
     
     # Temperature should have changed
-    assert widget.temperature < 150  # Dragged to low position
+    assert widget.temperature < 0.15 * widget.temperature_slider.max_temp  # Dragged to low position
     
     # Release
     mouseup = pygame.event.Event(pygame.MOUSEBUTTONUP, {'button': 1})
