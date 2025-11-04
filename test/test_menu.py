@@ -322,3 +322,255 @@ def test_close_button_render(pygame_init):
     
     surface = pygame.Surface((100, 100))
     button.render(surface)  # Should not raise
+
+
+def test_menu_no_scrollbar_when_few_items(pygame_init):
+    """Test that scrollbar doesn't appear when items fit."""
+    rect = pygame.Rect(100, 100, 300, 400)
+    menu = Menu(rect)
+    
+    # Add a few items
+    menu.add_item("Item 1")
+    menu.add_item("Item 2")
+    menu.add_item("Item 3")
+    
+    assert menu._needs_scrollbar() is False
+    assert menu.scrollbar is None
+
+
+def test_menu_scrollbar_when_many_items(pygame_init):
+    """Test that scrollbar appears when items don't fit."""
+    rect = pygame.Rect(100, 100, 300, 200)  # Small height
+    menu = Menu(rect)
+    
+    # Add many items
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()  # Trigger scrollbar creation
+    
+    assert menu._needs_scrollbar() is True
+    assert menu.scrollbar is not None
+
+
+def test_menu_total_content_height(pygame_init):
+    """Test calculation of total content height."""
+    rect = pygame.Rect(100, 100, 300, 400)
+    menu = Menu(rect)
+    
+    # Add 5 items
+    for i in range(5):
+        menu.add_item(f"Item {i}")
+    
+    # Total height = 5 * (item_height + spacing) - spacing
+    # = 5 * (35 + 5) - 5 = 195
+    expected_height = 5 * (menu.item_height + menu.item_spacing) - menu.item_spacing
+    
+    assert menu._get_total_content_height() == expected_height
+
+
+def test_menu_scrollbar_interaction(pygame_init):
+    """Test that scrollbar can be interacted with."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    # Add many items
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    assert menu.scrollbar is not None
+    
+    # Click on scrollbar
+    scrollbar_center = menu.scrollbar.rect.center
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': scrollbar_center}
+    )
+    handled = menu.handle_event(event)
+    
+    assert handled is True
+    assert menu.scrollbar.dragging is True
+
+
+def test_menu_scroll_updates_item_positions(pygame_init):
+    """Test that scrolling updates item positions."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    # Add many items
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    # Get initial position of first item
+    initial_y = menu.items[0].rect.top
+    
+    # Scroll down (increase scroll_offset)
+    menu.scroll_offset = 0.5
+    menu._update_item_positions()
+    
+    # First item should move up (negative y direction)
+    assert menu.items[0].rect.top < initial_y
+
+
+def test_menu_scroll_offset_clamped(pygame_init):
+    """Test that scroll offset stays in 0-1 range."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    # Scroll offset should start at 0
+    assert menu.scroll_offset == 0.0
+    
+    # Set to maximum
+    menu.scroll_offset = 1.0
+    menu._update_item_positions()
+    
+    assert menu.scroll_offset == 1.0
+
+
+def test_menu_content_rect_with_scrollbar(pygame_init):
+    """Test that content rect accounts for scrollbar width."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    # Without scrollbar
+    for i in range(3):
+        menu.add_item(f"Item {i}")
+    menu.open()
+    content_rect_no_scroll = menu._get_content_rect()
+    
+    # With scrollbar
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    menu.open()
+    content_rect_with_scroll = menu._get_content_rect()
+    
+    # Content rect should be narrower with scrollbar
+    assert content_rect_with_scroll.width < content_rect_no_scroll.width
+
+
+def test_menu_scrollbar_position_updates_on_reposition(pygame_init):
+    """Test that scrollbar moves with menu."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    old_scrollbar_x = menu.scrollbar.rect.left
+    
+    # Move menu
+    menu.set_position(200, 200)
+    
+    # Scrollbar should have moved
+    assert menu.scrollbar.rect.left == old_scrollbar_x + 100
+
+
+def test_menu_items_clipped_to_content_area(pygame_init):
+    """Test that only visible items are in content area."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    content_rect = menu._get_content_rect()
+    
+    # Some items should be outside content rect when not scrolled
+    visible_count = sum(1 for item in menu.items if content_rect.colliderect(item.rect))
+    
+    assert visible_count < len(menu.items)
+
+
+def test_menu_scroll_to_bottom_shows_last_items(pygame_init):
+    """Test that scrolling to bottom shows last items."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    # Scroll to bottom
+    menu.scroll_offset = 1.0
+    menu._update_item_positions()
+    
+    content_rect = menu._get_content_rect()
+    
+    # Last item should be visible
+    assert content_rect.colliderect(menu.items[-1].rect)
+
+
+def test_menu_scrollbar_drag_updates_scroll(pygame_init):
+    """Test that dragging scrollbar updates scroll offset."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    
+    # Start drag
+    menu.scrollbar.handle_click(menu.scrollbar.rect.center)
+    
+    # Drag down
+    new_pos = (menu.scrollbar.rect.centerx, menu.scrollbar.rect.bottom - 10)
+    motion_event = pygame.event.Event(pygame.MOUSEMOTION, {'pos': new_pos})
+    menu.handle_event(motion_event)
+    
+    # Scroll offset should have increased
+    assert menu.scroll_offset > 0.5
+
+
+def test_menu_no_scrollbar_after_removing_items(pygame_init):
+    """Test that scrollbar disappears if items are removed."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    # Add many items
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    assert menu._needs_scrollbar() is True
+    
+    # Remove most items
+    menu.items = menu.items[:3]
+    menu._update_item_positions()
+    
+    assert menu._needs_scrollbar() is False
+    assert menu.scrollbar is None
+
+
+def test_menu_scroll_offset_resets_when_no_scrollbar_needed(pygame_init):
+    """Test that scroll offset resets when scrollbar is no longer needed."""
+    rect = pygame.Rect(100, 100, 300, 200)
+    menu = Menu(rect)
+    
+    # Add many items and scroll
+    for i in range(20):
+        menu.add_item(f"Item {i}")
+    
+    menu.open()
+    menu.scroll_offset = 0.5
+    menu._update_item_positions()
+    
+    # Remove most items
+    menu.items = menu.items[:3]
+    menu._update_item_positions()
+    
+    assert menu.scroll_offset == 0.0
