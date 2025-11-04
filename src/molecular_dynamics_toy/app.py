@@ -118,7 +118,7 @@ class MDApplication:
         if self.simulation_widget and self.controls_widget:
             self.simulation_widget.engine.temperature = self.controls_widget.temperature
             self.simulation_widget.engine.timestep = self.controls_widget.timestep
-            
+
             # Update cell size (preserving fractional coordinates)
             new_cell_size = self.controls_widget.cell_size
             old_cell = self.simulation_widget.engine.atoms.cell[0, 0]
@@ -237,6 +237,8 @@ class MDApplication:
             self.simulation_widget.set_rect(self.SIMULATION_RECT)
         if self.controls_widget:
             self.controls_widget.set_rect(self.CONTROLS_RECT)
+            # Re-center menu after resize
+            self.controls_widget.center_preset_menu(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
 
 
 def main():
