@@ -257,16 +257,20 @@ class MDApplication:
         """Recalculate widget positions based on current window size."""
         # Simple responsive layout - adjust as needed
         margin = 50
-        sim_size = min(self.WINDOW_WIDTH/2, self.WINDOW_HEIGHT - 2*margin)
+        spacing = 20
+        controls_width = 460
+        controls_height = 260
+        sim_size = min(self.WINDOW_WIDTH - controls_width - 3*margin, self.WINDOW_HEIGHT - 2*margin)
+        periodic_table_width = max(controls_width, self.WINDOW_WIDTH - sim_size - 3*margin)
         
         self.SIMULATION_RECT = pygame.Rect(margin, margin, sim_size, sim_size)
         self.PERIODIC_TABLE_RECT = pygame.Rect(
-            sim_size + 2*margin, margin, 
-            self.WINDOW_WIDTH - sim_size - 3*margin, self.WINDOW_HEIGHT/2
+            self.WINDOW_WIDTH - margin - periodic_table_width, margin, 
+            periodic_table_width, self.WINDOW_HEIGHT - controls_height - 2*margin - spacing
         )
         self.CONTROLS_RECT = pygame.Rect(
-            sim_size + 2*margin, self.WINDOW_HEIGHT/2 + 2*margin,
-            self.WINDOW_WIDTH - sim_size - 3*margin, self.WINDOW_HEIGHT/2 - 3*margin
+            self.WINDOW_WIDTH - margin - controls_width, self.WINDOW_HEIGHT - controls_height - margin,
+            controls_width, controls_height
         )
 
         # Update widget rects if they exist

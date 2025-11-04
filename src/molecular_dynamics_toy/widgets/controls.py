@@ -754,7 +754,7 @@ class ControlsWidget:
         # Create load preset button (next to cell size control)
         load_preset_rect = pygame.Rect(
             self.rect.left + margin + 200 + spacing,
-            cell_size_top,
+            cell_size_top + 80 - button_size,
             button_size,
             button_size
         )
