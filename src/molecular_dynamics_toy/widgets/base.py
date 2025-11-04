@@ -443,6 +443,7 @@ class Menu:
     
     Provides a popup menu with a list of items and optional close button.
     Handles layout, rendering, and event handling for menu items.
+    Supports scrolling when items don't fit.
     
     Attributes:
         rect: Rectangle defining menu position and size.
@@ -451,6 +452,8 @@ class Menu:
         close_on_outside_click: Whether to close when clicking outside menu.
         show_close_button: Whether to show the close button.
         auto_close_on_select: Whether to close menu when item is clicked.
+        scroll_offset: Current scroll position (0-1).
+        scrollbar: Scrollbar widget if needed.
     """
     
     # Menu styling
@@ -483,6 +486,11 @@ class Menu:
         self.item_height = 35
         self.item_spacing = 5
         self.margin = 15
+        self.scrollbar_width = 20
+        
+        # Scrolling
+        self.scroll_offset = 0.0  # 0-1 normalized
+        self.scrollbar = None
         
         # Close button
         self.close_button = None
@@ -500,9 +508,75 @@ class Menu:
         self.items: List[MenuItem] = []
         self.title_font = pygame.font.Font(None, 28)
         
+    def _get_content_rect(self) -> pygame.Rect:
+        """Get the rectangle for scrollable content area.
+        
+        Returns:
+            Rectangle defining the visible content area.
+        """
+        content_top = self.rect.top + self.title_height + self.margin
+        content_height = self.rect.height - self.title_height - 2 * self.margin
+        
+        # Reserve space for scrollbar if needed
+        scrollbar_space = self.scrollbar_width + 5 if self._needs_scrollbar() else 0
+        
+        return pygame.Rect(
+            self.rect.left + self.margin,
+            content_top,
+            self.rect.width - 2 * self.margin - scrollbar_space,
+            content_height
+        )
+        
+    def _get_total_content_height(self) -> int:
+        """Get total height of all items.
+        
+        Returns:
+            Total height needed for all items.
+        """
+        if not self.items:
+            return 0
+        return len(self.items) * (self.item_height + self.item_spacing) - self.item_spacing
+        
+    def _needs_scrollbar(self) -> bool:
+        """Check if scrollbar is needed.
+        
+        Returns:
+            True if content exceeds visible area.
+        """
+        content_height = self.rect.height - self.title_height - 2 * self.margin
+        total_height = self._get_total_content_height()
+        return total_height > content_height
+        
+    def _update_scrollbar(self):
+        """Create or update scrollbar if needed."""
+        if self._needs_scrollbar():
+            if self.scrollbar is None:
+                # Create scrollbar
+                content_rect = self._get_content_rect()
+                scrollbar_rect = pygame.Rect(
+                    self.rect.right - self.scrollbar_width - self.margin,
+                    content_rect.top,
+                    self.scrollbar_width,
+                    content_rect.height
+                )
+                self.scrollbar = Slider(scrollbar_rect, initial_value=0.0, orientation='vertical')
+            else:
+                # Update scrollbar position
+                content_rect = self._get_content_rect()
+                self.scrollbar.rect = pygame.Rect(
+                    self.rect.right - self.scrollbar_width - self.margin,
+                    content_rect.top,
+                    self.scrollbar_width,
+                    content_rect.height
+                )
+        else:
+            self.scrollbar = None
+            self.scroll_offset = 0.0
+        
     def open(self):
         """Open the menu."""
         self.visible = True
+        self._update_item_positions()
         logger.info(f"Menu '{self.title}' opened")
         
     def close(self):
@@ -516,7 +590,59 @@ class Menu:
             self.close()
         else:
             self.open()
-    
+            
+    def add_item(self, text: str, callback: Optional[Callable[[], None]] = None):
+        """Add a menu item.
+        
+        Args:
+            text: Item text.
+            callback: Function to call when item is clicked.
+        """
+        # Create item at placeholder position (will be updated)
+        item_rect = pygame.Rect(0, 0, 100, self.item_height)
+        
+        # Optionally wrap callback to auto-close menu after action
+        if self.auto_close_on_select and callback:
+            original_callback = callback
+            def wrapped_callback():
+                original_callback()
+                self.close()
+            final_callback = wrapped_callback
+        else:
+            final_callback = callback
+        
+        item = MenuItem(item_rect, text, callback=final_callback)
+        self.items.append(item)
+        
+        # Update positions and scrollbar
+        self._update_item_positions()
+        
+    def _update_item_positions(self):
+        """Update positions of all menu items based on scroll offset."""
+        content_rect = self._get_content_rect()
+        total_height = self._get_total_content_height()
+        
+        # Calculate scroll offset in pixels
+        if self._needs_scrollbar():
+            max_scroll = total_height - content_rect.height
+            scroll_pixels = self.scroll_offset * max_scroll
+        else:
+            scroll_pixels = 0
+            
+        # Position items
+        for i, item in enumerate(self.items):
+            item_y = content_rect.top + i * (self.item_height + self.item_spacing) - scroll_pixels
+            
+            item.rect = pygame.Rect(
+                content_rect.left,
+                item_y,
+                content_rect.width,
+                self.item_height
+            )
+            
+        # Update scrollbar
+        self._update_scrollbar()
+        
     def set_position(self, x: int, y: int):
         """Set menu position and update all sub-components.
         
@@ -535,10 +661,9 @@ class Menu:
         if self.close_button:
             self.close_button.rect.move_ip(dx, dy)
             
-        # Move all menu items
-        for item in self.items:
-            item.rect.move_ip(dx, dy)
-            
+        # Update item positions (recalculate based on new rect)
+        self._update_item_positions()
+        
     def center(self, width: int, height: int):
         """Center menu in a window of given dimensions.
         
@@ -549,37 +674,6 @@ class Menu:
         new_x = (width - self.rect.width) // 2
         new_y = (height - self.rect.height) // 2
         self.set_position(new_x, new_y)
-
-    def add_item(self, text: str, callback: Optional[Callable[[], None]] = None):
-        """Add a menu item.
-        
-        Args:
-            text: Item text.
-            callback: Function to call when item is clicked.
-        """
-        # Calculate position for new item
-        items_top = self.rect.top + self.title_height + self.margin
-        item_y = items_top + len(self.items) * (self.item_height + self.item_spacing)
-        
-        item_rect = pygame.Rect(
-            self.rect.left + self.margin,
-            item_y,
-            self.rect.width - 2 * self.margin,
-            self.item_height
-        )
-        
-        # Optionally wrap callback to auto-close menu after action
-        if self.auto_close_on_select and callback:
-            original_callback = callback
-            def wrapped_callback():
-                original_callback()
-                self.close()
-            final_callback = wrapped_callback
-        else:
-            final_callback = callback
-        
-        item = MenuItem(item_rect, text, callback=final_callback)
-        self.items.append(item)
         
     def handle_event(self, event: pygame.event.Event) -> bool:
         """Handle pygame events.
@@ -596,15 +690,22 @@ class Menu:
         # Menu is visible - consume all mouse events to prevent interaction with widgets behind it
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
+                # Check scrollbar first
+                if self.scrollbar and self.scrollbar.handle_click(event.pos):
+                    return True
+                
                 # Check close button
                 if self.close_button and self.close_button.handle_click(event.pos):
                     self.close()
                     return True
                     
-                # Check menu items
+                # Check menu items (only if visible in scroll area)
+                content_rect = self._get_content_rect()
                 for item in self.items:
-                    if item.handle_click(event.pos):
-                        return True
+                    # Check if item is visible in content area
+                    if content_rect.colliderect(item.rect):
+                        if item.handle_click(event.pos):
+                            return True
                         
                 # Check if click is inside menu area
                 if self.rect.collidepoint(event.pos):
@@ -615,13 +716,30 @@ class Menu:
                     self.close()
                     return True
                     
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                if self.scrollbar:
+                    self.scrollbar.handle_release()
+                    
         elif event.type == pygame.MOUSEMOTION:
             # Update hover states only for menu elements
             if self.close_button:
                 self.close_button.handle_hover(event.pos)
-            for item in self.items:
-                item.handle_hover(event.pos)
+            
+            # Handle scrollbar dragging
+            if self.scrollbar:
+                self.scrollbar.handle_hover(event.pos)
+                self.scrollbar.handle_drag(event.pos)
+                # Update scroll offset from scrollbar
+                self.scroll_offset = self.scrollbar.value
+                self._update_item_positions()
                 
+            # Update item hover states (only for visible items)
+            content_rect = self._get_content_rect()
+            for item in self.items:
+                if content_rect.colliderect(item.rect):
+                    item.handle_hover(event.pos)
+            
         # Consume all mouse events when menu is visible
         return True
         
@@ -666,6 +784,18 @@ class Menu:
         if self.close_button:
             self.close_button.render(surface)
         
-        # Draw menu items
+        # Set up clipping for scrollable content
+        content_rect = self._get_content_rect()
+        surface.set_clip(content_rect)
+        
+        # Draw menu items (only visible ones)
         for item in self.items:
-            item.render(surface)
+            if content_rect.colliderect(item.rect):
+                item.render(surface)
+        
+        # Remove clipping
+        surface.set_clip(None)
+        
+        # Draw scrollbar
+        if self.scrollbar:
+            self.scrollbar.render(surface)

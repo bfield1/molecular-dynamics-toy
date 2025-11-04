@@ -33,6 +33,18 @@ def _create_preset_menu() -> Menu:
     menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
     menu.add_item("FCC gold", lambda: logger.info("Load gold"))
     menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
+    menu.add_item("Water molecule", lambda: logger.info("Load water"))
+    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
+    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
+    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
+    menu.add_item("Water molecule", lambda: logger.info("Load water"))
+    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
+    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
+    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
+    menu.add_item("Water molecule", lambda: logger.info("Load water"))
+    menu.add_item("Diamond lattice", lambda: logger.info("Load diamond"))
+    menu.add_item("FCC gold", lambda: logger.info("Load gold"))
+    menu.add_item("Graphene sheet", lambda: logger.info("Load graphene"))
     
     return menu
 
