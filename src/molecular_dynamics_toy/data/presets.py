@@ -2,12 +2,49 @@
 
 import logging
 from typing import Dict, Callable, List
+import importlib.resources
 
 import numpy as np
 from ase import Atoms
+import ase.io
 from ase.build import molecule, bulk, graphene_nanoribbon
 
+
 logger = logging.getLogger(__name__)
+
+
+def _load_from_file(filename: str) -> Callable[[], Atoms]:
+    """Create a loader function for a structure file.
+    
+    Args:
+        filename: Name of file in data/structures/ directory.
+        
+    Returns:
+        Function that loads and returns the Atoms object.
+    """
+    def loader() -> Atoms:
+        """Load structure from file."""
+        structures_path = importlib.resources.files('molecular_dynamics_toy.data') / 'structures' / filename
+        try:
+            atoms = ase.io.read(structures_path, format='vasp')
+        except IOError as e:
+            logger.error(f"Failed to load structure from {filename}: {e}")
+            raise
+        
+        # Ensure cubic cell for compatibility
+        cell = atoms.get_cell()
+        if not (abs(cell[0, 0] - cell[1, 1]) < 1e-6 and 
+                abs(cell[1, 1] - cell[2, 2]) < 1e-6 and
+                abs(cell[0, 1]) < 1e-6 and abs(cell[0, 2]) < 1e-6 and 
+                abs(cell[1, 0]) < 1e-6 and abs(cell[1, 2]) < 1e-6 and
+                abs(cell[2, 0]) < 1e-6 and abs(cell[2, 1]) < 1e-6):
+            logger.warning(f"Structure {filename} does not have cubic cell, may not work correctly")
+        
+        atoms.pbc = True
+        logger.info(f"Loaded structure from {filename}")
+        return atoms
+    
+    return loader
 
 
 def _molecule_in_box(molecule_name: str, vacuum: float = 5.0) -> Atoms:
@@ -265,6 +302,7 @@ PRESETS: Dict[str, tuple[str, Callable[[], Atoms]]] = {
     "graphene": ("Graphene sheet", create_graphene_sheet),
     "nacl": ("NaCl crystal", create_nacl_crystal),
     "copper": ("FCC copper", create_copper_fcc),
+    "pbse_dw": ("PbSe domain wall", _load_from_file("PbSe_domain_wall.vasp")),
 }
 
 

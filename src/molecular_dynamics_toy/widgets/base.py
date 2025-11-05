@@ -730,7 +730,7 @@ class Menu:
                 self.scrollbar.value = self.scroll_offset
                 self._update_item_positions()
                 return True
-                    
+        
         elif event.type == pygame.MOUSEMOTION:
             # Update hover states only for menu elements
             if self.close_button:
