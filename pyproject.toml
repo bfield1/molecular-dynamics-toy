@@ -11,6 +11,7 @@ dependencies = [
     "ase",
     "numpy",
     "pygame",
+    "mattersim",
 ]
 
 [project.optional-dependencies]
