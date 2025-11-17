@@ -1,15 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_submodules
+import os.path
+
+import ase.collections
+
 
 hiddenimports = []
-#hiddenimports = collect_submodules('torch_geometric')
+datas = [
+    ('src/molecular_dynamics_toy/data/structures/*', 'molecular_dynamics_toy/data/structures'),
+    (os.path.join(os.path.dirname(ase.collections.__file__), 'g2.json'), 'ase/collections'),
+]
 
 a = Analysis(
     ['src/molecular_dynamics_toy/__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},

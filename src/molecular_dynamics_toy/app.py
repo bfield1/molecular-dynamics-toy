@@ -60,7 +60,7 @@ class MDApplication:
             (self.WINDOW_WIDTH, self.WINDOW_HEIGHT),
             pygame.RESIZABLE
         )
-        pygame.display.set_caption("Interactive Molecular Dynamics")
+        pygame.display.set_caption("Molecular Dynamics Toy")
         
         self.clock = pygame.time.Clock()
         self.fps = fps
