@@ -1,0 +1,27 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
+
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-python@v6
+      with:
+        python-version: 3.13
+      
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools
+        python -m pip install pyinstaller
+        python -m pip install -e .
+    - name: Compile executable
+      run: pyinstaller MDToy.spec
+    - uses: actions/upload-artifact@v5
+      with:
+        path: dist/*

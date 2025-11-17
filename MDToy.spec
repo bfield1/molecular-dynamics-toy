@@ -23,7 +23,7 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    optimize=0,
+    optimize=1,
 	module_collection_mode = {
 		'torch_geometric': 'pyz+py',
 		'torch_runstats': 'pyz+py',
