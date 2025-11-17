@@ -10,6 +10,7 @@ datas = [
     ('src/molecular_dynamics_toy/data/structures/*', 'molecular_dynamics_toy/data/structures'),
     (os.path.join(os.path.dirname(ase.collections.__file__), 'g2.json'), 'ase/collections'),
     ('ThirdPartyNotices.html', '.'),
+    ('LICENSE.txt', '.'),
 ]
 
 a = Analysis(

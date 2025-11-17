@@ -66,11 +66,19 @@ Features:
 
 Version: {_VERSION}
 Author: Bernard Field
-Copyright 2025 Bernard Field
 
 Check for updates and see the source code on the website:
 github.com/bfield1/molecular-dynamics-toy
 """
+
+COPYRIGHT_TEXT = """molecular_dynamics_toy
+Copyright (C) 2025  Bernard Field
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>."""
 
 
 class MainMenu(Menu):
@@ -97,10 +105,13 @@ class MainMenu(Menu):
 
         about_rect = pygame.Rect(0, 0, 500, 500)
         self.about_textbox = TextBox(about_rect, title="About", text=ABOUT_TEXT)
+        about_rect = pygame.Rect(0, 0, 500, 500)
+        self.copyright_textbox = TextBox(about_rect, title="Copyright", text=COPYRIGHT_TEXT)
         
         # Add menu items
         self.add_item("About", self._show_about)
         self.add_item("Website", self._open_website)
+        self.add_item("Copyright", self._show_copyright)
         if getattr(sys, "frozen", False) or force_show_third_party:
             # Only link to 3rd party info if using the bundled version of the app.
             self.add_item("Third Party Information", self._show_third_party_info)
@@ -110,6 +121,11 @@ class MainMenu(Menu):
         """Show about dialog."""
         logger.info("Showing About dialog")
         self.about_textbox.open()
+    
+    def _show_copyright(self):
+        """Show copyright dialog."""
+        logger.info("Showing Copyright dialog")
+        self.copyright_textbox.open()
     
     def _open_website(self):
         """Open GitHub home-page"""

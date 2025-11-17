@@ -13,6 +13,27 @@ dependencies = [
     "pygame",
     "mattersim",
 ]
+authors = [
+    {name = "Bernard Field", email = "bfield@lbl.gov"},
+]
+maintainers = [
+    {name = "Bernard Field", email = "bfield@lbl.gov"},
+]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.txt"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Education",
+    "Topic :: Games/Entertainment :: Simulation",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -22,3 +43,6 @@ dev = [
     "pip-licenses",
     "beautifulsoup4",
 ]
+
+[project.urls]
+Repository = "https://github.com/bfield1/molecular-dynamics-toy"
