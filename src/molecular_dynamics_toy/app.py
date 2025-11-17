@@ -99,6 +99,9 @@ class MDApplication:
                 logger.debug(f"Window resized to {event.w}x{event.h}")
 
             # Menus get priority for event handling
+            # Check About textbox first (highest priority when open)
+            if self.main_menu and self.main_menu.about_textbox.handle_event(event):
+                continue
             if self.preset_menu and self.preset_menu.handle_event(event):
                 continue  # Event consumed by menu
             if self.main_menu and self.main_menu.handle_event(event):
@@ -174,6 +177,9 @@ class MDApplication:
             self.preset_menu.render(self.screen)
         if self.main_menu:
             self.main_menu.render(self.screen)
+            # Render About textbox on top of menu
+            if self.main_menu.about_textbox:
+                self.main_menu.about_textbox.render(self.screen)
 
         # Draw FPS counter
         if self.show_fps:
@@ -272,6 +278,8 @@ class MDApplication:
             self.preset_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
         if self.main_menu:
             self.main_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+            if self.main_menu.about_textbox:
+                self.main_menu.about_textbox.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
 
     def _load_preset(self, preset_id: str):
         """Load a preset configuration into the simulation.

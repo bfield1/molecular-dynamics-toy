@@ -8,7 +8,7 @@ import webbrowser
 
 import pygame
 
-from molecular_dynamics_toy.widgets.base import Menu
+from molecular_dynamics_toy.widgets.base import Menu, TextBox
 from molecular_dynamics_toy.data import presets
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,25 @@ class PresetsMenu(Menu):
             self.load_callback(preset_id)
 
 
+ABOUT_TEXT = """Molecular Dynamics Toy
+
+A simple molecular dynamics simulation demo built with Python, Pygame, and ASE.
+
+Features:
+- Interactive atom placement
+- Real-time MD simulation using MatterSim
+- Multiple preset structures
+- Adjustable simulation parameters
+
+Version: 0.1.0
+Author: Bernard Field
+Copyright 2025 Bernard Field
+
+Check for updates and see the source code on the website:
+github.com/bfield1/molecular-dynamics-toy
+"""
+
+
 class MainMenu(Menu):
     """Main application menu.
     
@@ -70,17 +89,28 @@ class MainMenu(Menu):
         super().__init__(rect, title="Menu", auto_close_on_select=False)
         
         self.exit_callback = exit_callback
+
+        about_rect = pygame.Rect(0, 0, 400, 500)
+        self.about_textbox = TextBox(about_rect, title="About", text=ABOUT_TEXT)
         
         # Add menu items
         self.add_item("About", self._show_about)
+        self.add_item("Website", self._open_website)
         if getattr(sys, "frozen", False) or force_show_third_party:
             # Only link to 3rd party info if using the bundled version of the app.
             self.add_item("Third Party Information", self._show_third_party_info)
         self.add_item("Exit", self._exit_application)
         
     def _show_about(self):
-        """Show about dialog (not yet implemented)."""
-        logger.info("About clicked (not implemented)")
+        """Show about dialog."""
+        logger.info("Showing About dialog")
+        self.about_textbox.open()
+    
+    def _open_website(self):
+        """Open GitHub home-page"""
+        URL = r"https://github.com/bfield1/molecular-dynamics-toy"
+        logger.info(f"Opening {URL}")
+        webbrowser.open(URL)
         
     def _show_third_party_info(self):
         """Show third party information in default web browser."""

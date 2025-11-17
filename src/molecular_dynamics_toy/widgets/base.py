@@ -809,3 +809,146 @@ class Menu:
         # Draw scrollbar
         if self.scrollbar:
             self.scrollbar.render(surface)
+
+
+class TextBox(Menu):
+    """A popup text box that displays scrollable text.
+    
+    Reuses Menu's window, scrolling, and close button infrastructure
+    but displays text instead of menu items.
+    
+    Attributes:
+        text: Text content to display.
+        font: Font for rendering text.
+        line_height: Height of each text line.
+        wrapped_lines: Text split into wrapped lines.
+    """
+    
+    TEXT_COLOR = colors.TEXT_COLOR
+    
+    def __init__(self, rect: pygame.Rect, title: str = "Text", text: str = ""):
+        """Initialize the text box.
+        
+        Args:
+            rect: Rectangle defining position and size.
+            title: Title text to display at top.
+            text: Text content to display.
+        """
+        # Initialize as Menu but don't auto-close on select (no items to select)
+        super().__init__(rect, title=title, show_close_button=True, 
+                        close_on_outside_click=True, auto_close_on_select=False)
+        
+        self.text = text
+        self.font = pygame.font.Font(None, 20)
+        self.line_height = 25
+        self.wrapped_lines = []
+        
+        self._wrap_text()
+        
+    def _wrap_text(self):
+        """Wrap text to fit in content area."""
+        content_rect = self._get_content_rect()
+        max_width = content_rect.width - 20  # Padding
+        
+        self.wrapped_lines = []
+        
+        # Split into paragraphs first
+        paragraphs = self.text.split('\n')
+        
+        for paragraph in paragraphs:
+            if not paragraph.strip():
+                self.wrapped_lines.append("")  # Empty line for paragraph break
+                continue
+                
+            words = paragraph.split(' ')
+            current_line = ""
+            
+            for word in words:
+                test_line = current_line + word + " "
+                test_surface = self.font.render(test_line, True, self.TEXT_COLOR)
+                
+                if test_surface.get_width() <= max_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        self.wrapped_lines.append(current_line.rstrip())
+                    current_line = word + " "
+            
+            if current_line:
+                self.wrapped_lines.append(current_line.rstrip())
+                
+    def _get_total_content_height(self) -> int:
+        """Get total height of all text lines.
+        
+        Returns:
+            Total height needed for all lines.
+        """
+        return len(self.wrapped_lines) * self.line_height
+        
+    def render(self, surface: pygame.Surface):
+        """Render the text box.
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        if not self.visible:
+            return
+            
+        # Draw semi-transparent overlay behind text box
+        overlay = pygame.Surface((surface.get_width(), surface.get_height()))
+        overlay.set_alpha(100)
+        overlay.fill(colors.MENU_OVERLAY_COLOR)
+        surface.blit(overlay, (0, 0))
+        
+        # Draw background
+        pygame.draw.rect(surface, self.BG_COLOR, self.rect)
+        pygame.draw.rect(surface, self.BORDER_COLOR, self.rect, 3)
+        
+        # Draw title
+        title_surface = self.title_font.render(self.title, True, self.TITLE_COLOR)
+        title_rect = title_surface.get_rect(
+            centerx=self.rect.centerx,
+            top=self.rect.top + 10
+        )
+        surface.blit(title_surface, title_rect)
+        
+        # Draw separator line under title
+        separator_y = self.rect.top + self.title_height
+        pygame.draw.line(
+            surface,
+            self.BORDER_COLOR,
+            (self.rect.left + 10, separator_y),
+            (self.rect.right - 10, separator_y),
+            2
+        )
+        
+        # Draw close button
+        if self.close_button:
+            self.close_button.render(surface)
+        
+        # Set up clipping for scrollable content
+        content_rect = self._get_content_rect()
+        surface.set_clip(content_rect)
+        
+        # Calculate scroll offset in pixels
+        total_height = self._get_total_content_height()
+        if self._needs_scrollbar():
+            max_scroll = total_height - content_rect.height
+            scroll_pixels = self.scroll_offset * max_scroll
+        else:
+            scroll_pixels = 0
+        
+        # Draw text lines
+        y_offset = content_rect.top - scroll_pixels
+        for line in self.wrapped_lines:
+            if y_offset + self.line_height >= content_rect.top and y_offset <= content_rect.bottom:
+                text_surface = self.font.render(line, True, self.TEXT_COLOR)
+                surface.blit(text_surface, (content_rect.left + 10, y_offset))
+            y_offset += self.line_height
+        
+        # Remove clipping
+        surface.set_clip(None)
+        
+        # Draw scrollbar
+        if self.scrollbar:
+            self.scrollbar.render(surface)
