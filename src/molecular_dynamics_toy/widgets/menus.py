@@ -5,6 +5,7 @@ import sys
 import os.path
 from typing import Optional, Callable
 import webbrowser
+import importlib.metadata
 
 import pygame
 
@@ -48,8 +49,12 @@ class PresetsMenu(Menu):
         if self.load_callback:
             self.load_callback(preset_id)
 
+try:
+    _VERSION = importlib.metadata.version("molecular_dynamics_toy")
+except importlib.metadata.PackageNotFoundError:
+    _VERSION = "dev"
 
-ABOUT_TEXT = """Molecular Dynamics Toy
+ABOUT_TEXT = f"""Molecular Dynamics Toy
 
 A simple molecular dynamics simulation demo built with Python, Pygame, and ASE.
 
@@ -59,7 +64,7 @@ Features:
 - Multiple preset structures
 - Adjustable simulation parameters
 
-Version: 0.1.0
+Version: {_VERSION}
 Author: Bernard Field
 Copyright 2025 Bernard Field
 
@@ -90,7 +95,7 @@ class MainMenu(Menu):
         
         self.exit_callback = exit_callback
 
-        about_rect = pygame.Rect(0, 0, 400, 500)
+        about_rect = pygame.Rect(0, 0, 500, 500)
         self.about_textbox = TextBox(about_rect, title="About", text=ABOUT_TEXT)
         
         # Add menu items

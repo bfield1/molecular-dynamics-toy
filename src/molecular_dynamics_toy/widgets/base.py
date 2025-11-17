@@ -839,7 +839,7 @@ class TextBox(Menu):
                         close_on_outside_click=True, auto_close_on_select=False)
         
         self.text = text
-        self.font = pygame.font.Font(None, 20)
+        self.font = pygame.font.SysFont('arial', 16, bold=False)  # Use system font with antialiasing
         self.line_height = 25
         self.wrapped_lines = []
         
