@@ -1,8 +1,13 @@
 """Specialized menu widgets."""
 
 import logging
-import pygame
+import sys
+import os.path
 from typing import Optional, Callable
+import webbrowser
+
+import pygame
+
 from molecular_dynamics_toy.widgets.base import Menu
 from molecular_dynamics_toy.data import presets
 
@@ -50,12 +55,17 @@ class MainMenu(Menu):
     Provides access to application-level functions like About, Info, and Exit.
     """
     
-    def __init__(self, rect: pygame.Rect, exit_callback: Optional[Callable[[], None]] = None):
+    def __init__(self, rect: pygame.Rect, exit_callback: Optional[Callable[[], None]] = None,
+                 force_show_third_party: Optional[bool] = False):
         """Initialize the main menu.
         
         Args:
             rect: Rectangle defining menu position and size.
             exit_callback: Function to call when Exit is selected.
+            force_show_third_party: Shows the "Third Party Information" button,
+                even in a package or development build.
+                Note that it will likely not work if used in a package build,
+                and may check outside the intended directory.
         """
         super().__init__(rect, title="Menu", auto_close_on_select=False)
         
@@ -63,7 +73,9 @@ class MainMenu(Menu):
         
         # Add menu items
         self.add_item("About", self._show_about)
-        self.add_item("Third Party Information", self._show_third_party_info)
+        if getattr(sys, "frozen", False) or force_show_third_party:
+            # Only link to 3rd party info if using the bundled version of the app.
+            self.add_item("Third Party Information", self._show_third_party_info)
         self.add_item("Exit", self._exit_application)
         
     def _show_about(self):
@@ -71,8 +83,26 @@ class MainMenu(Menu):
         logger.info("About clicked (not implemented)")
         
     def _show_third_party_info(self):
-        """Show third party information (not yet implemented)."""
-        logger.info("Third Party Info clicked (not implemented)")
+        """Show third party information in default web browser."""
+        try:
+            # Get the path to ThirdPartyNotices.html
+            # When bundled with PyInstaller, files are in sys._MEIPASS
+            if hasattr(sys, '_MEIPASS'):
+                html_path = os.path.join(sys._MEIPASS, 'ThirdPartyNotices.html')
+            else:
+                # Development mode - look in project root or similar
+                html_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 
+                                        'ThirdPartyNotices.html')
+            
+            if os.path.exists(html_path):
+                # Open in default web browser
+                webbrowser.open('file://' + os.path.abspath(html_path))
+                logger.info(f"Opened third party notices: {html_path}")
+            else:
+                logger.error(f"Third party notices file not found: {html_path}")
+                
+        except Exception as e:
+            logger.error(f"Failed to open third party notices: {e}")
         
     def _exit_application(self):
         """Exit the application."""
