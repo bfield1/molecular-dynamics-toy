@@ -555,6 +555,40 @@ class LoadPresetButton(Button):
         pygame.draw.rect(surface, self.ICON_COLOR, base_rect, 2)
 
 
+class MenuButton(Button):
+    """A button that opens the main menu (hamburger icon)."""
+    
+    ICON_COLOR = colors.CONTROL_ICON_COLOR
+    
+    def __init__(self, rect: pygame.Rect):
+        """Initialize menu button.
+        
+        Args:
+            rect: Rectangle defining position and size.
+        """
+        super().__init__(rect)
+        
+    def render_content(self, surface: pygame.Surface):
+        """Render hamburger menu icon (three horizontal lines).
+        
+        Args:
+            surface: Surface to render onto.
+        """
+        icon_rect = self.rect.inflate(-16, -16)
+        
+        # Draw three horizontal lines
+        line_height = 3
+        spacing = (icon_rect.height - 3 * line_height) // 2
+        
+        for i in range(3):
+            y = icon_rect.top + i * (line_height + spacing)
+            pygame.draw.rect(
+                surface,
+                self.ICON_COLOR,
+                pygame.Rect(icon_rect.left, y, icon_rect.width, line_height)
+            )
+
+
 class ControlsWidget:
     """Widget for simulation controls (play/pause, speed, temperature).
     
@@ -567,6 +601,7 @@ class ControlsWidget:
         temperature: Target temperature in Kelvin.
         cell_size: Simulation cell size in Angstroms.
         open_preset_menu_requested: True if preset menu should be opened.
+        open_main_menu_requested: True if main menu should be opened.
     """
     
     BG_COLOR = colors.WIDGET_BG_COLOR
@@ -587,6 +622,7 @@ class ControlsWidget:
         self.load_preset_button = None
         self.reset_requested = False
         self.open_preset_menu_requested = False
+        self.open_main_menu_requested = False
         
         self._create_controls()
         logger.info("ControlsWidget initialized")
@@ -681,6 +717,15 @@ class ControlsWidget:
             button_size
         )
         self.load_preset_button = LoadPresetButton(load_preset_rect)
+
+        # Create menu button
+        menu_button_rect = pygame.Rect(
+            self.rect.left + margin + 200 + button_size + 3 * spacing,
+            cell_size_top + 80 - button_size,
+            button_size,
+            button_size
+        )
+        self.menu_button = MenuButton(menu_button_rect)
     
     @property
     def playing(self) -> bool:
@@ -731,6 +776,9 @@ class ControlsWidget:
                 if self.load_preset_button:
                     if self.load_preset_button.handle_click(event.pos):
                         self.open_preset_menu_requested = True
+                if self.menu_button:
+                    if self.menu_button.handle_click(event.pos):
+                        self.open_main_menu_requested = True
                     
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left click release
@@ -753,6 +801,8 @@ class ControlsWidget:
                 self.cell_size_control.handle_hover(event.pos)
             if self.load_preset_button:
                 self.load_preset_button.handle_hover(event.pos)
+            if self.menu_button:
+                self.menu_button.handle_hover(event.pos)
                 
     def update(self):
         """Update widget state (called each frame)."""
@@ -782,6 +832,8 @@ class ControlsWidget:
             self.cell_size_control.render(surface)
         if self.load_preset_button:
             self.load_preset_button.render(surface)
+        if self.menu_button:
+            self.menu_button.render(surface)
             
     def set_rect(self, rect: pygame.Rect):
         """Update widget position and size, recalculating control positions.

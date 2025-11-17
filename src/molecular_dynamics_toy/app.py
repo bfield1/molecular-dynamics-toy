@@ -8,8 +8,7 @@ import sys
 from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
 from molecular_dynamics_toy.widgets.simulation import SimulationWidget
-from molecular_dynamics_toy.widgets.base import Menu
-from molecular_dynamics_toy.widgets.menus import PresetsMenu
+from molecular_dynamics_toy.widgets.menus import PresetsMenu, MainMenu
 from molecular_dynamics_toy.data.presets import create_preset
 from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.calculators import get_calculator
@@ -77,6 +76,7 @@ class MDApplication:
         self.controls_widget = ControlsWidget(self.CONTROLS_RECT)
         # Create menus
         self.preset_menu = PresetsMenu(pygame.Rect(0, 0, 300, 400), load_callback=self._load_preset)
+        self.main_menu = MainMenu(pygame.Rect(0, 0, 300, 300), exit_callback=self.exit)
         
         self._update_layout()
 
@@ -100,6 +100,8 @@ class MDApplication:
 
             # Menus get priority for event handling
             if self.preset_menu and self.preset_menu.handle_event(event):
+                continue  # Event consumed by menu
+            if self.main_menu and self.main_menu.handle_event(event):
                 continue  # Event consumed by menu
 
             # Pass events to widgets when they exist
@@ -147,6 +149,9 @@ class MDApplication:
         if self.controls_widget and self.controls_widget.open_preset_menu_requested:
             self.preset_menu.open()
             self.controls_widget.open_preset_menu_requested = False
+        if self.controls_widget and self.controls_widget.open_main_menu_requested:
+            self.main_menu.open()
+            self.controls_widget.open_main_menu_requested = False
         
     def render(self):
         """Render the application.
@@ -167,6 +172,8 @@ class MDApplication:
         # Render menus on top
         if self.preset_menu:
             self.preset_menu.render(self.screen)
+        if self.main_menu:
+            self.main_menu.render(self.screen)
 
         # Draw FPS counter
         if self.show_fps:
@@ -263,6 +270,8 @@ class MDApplication:
         # Re-center menus after resize
         if self.preset_menu:
             self.preset_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        if self.main_menu:
+            self.main_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
 
     def _load_preset(self, preset_id: str):
         """Load a preset configuration into the simulation.
@@ -298,6 +307,10 @@ class MDApplication:
                 
         except Exception as e:
             logger.error(f"Failed to load preset {preset_id}: {e}")
+    
+    def exit(self):
+        """Exit the application."""
+        self.running = False
 
 
 def main():
