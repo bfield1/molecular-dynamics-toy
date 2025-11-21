@@ -292,7 +292,7 @@ def create_ice_crystal() -> Atoms:
 # Format: name -> (description, creation_function)
 PRESETS: Dict[str, tuple[str, Callable[[], Atoms]]] = {
     "water": ("Water molecule", create_water_molecule),
-    "ice": ("Ice crystal", create_ice_crystal),
+    #"ice": ("Ice crystal", create_ice_crystal),
     "ethanol": ("Ethanol molecule", create_ethanol_molecule),
     "methane": ("Methane molecule", create_methane_molecule),
     "benzene": ("Benzene molecule", create_benzene_molecule),
@@ -303,6 +303,7 @@ PRESETS: Dict[str, tuple[str, Callable[[], Atoms]]] = {
     "nacl": ("NaCl crystal", create_nacl_crystal),
     "copper": ("FCC copper", create_copper_fcc),
     "pbse_dw": ("PbSe domain wall", _load_from_file("PbSe_domain_wall.vasp")),
+    "dca": ("DCA molecule", _load_from_file("DCA.vasp")),
 }
 
 
