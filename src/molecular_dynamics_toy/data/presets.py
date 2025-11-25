@@ -304,6 +304,7 @@ PRESETS: Dict[str, tuple[str, Callable[[], Atoms]]] = {
     "copper": ("FCC copper", create_copper_fcc),
     "pbse_dw": ("PbSe domain wall", _load_from_file("PbSe_domain_wall.vasp")),
     "dca": ("DCA molecule", _load_from_file("DCA.vasp")),
+    "dca": ("HAT molecule", _load_from_file("HAT.vasp")),
 }
 
 
