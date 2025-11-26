@@ -7,8 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
-        os: ['windows-latest', 'macos-latest']
+        os: ['windows-latest', 'ubuntu-latest', 'macos-latest']
 
     steps:
     - uses: actions/checkout@v5
@@ -31,6 +30,10 @@ jobs:
       run: |
         tar -czf MDToy-macos-dir.tar.gz -C dist MDToy
         tar -czf MDToy-macos-app.tar.gz -C dist MDToy.app
+    
+    - name: Create tarball (Ubuntu only)
+      if: runner.os == 'Linux'
+      run: tar -czf MDToy-linux.tar.gz -C dist MDToy
 
     - uses: actions/upload-artifact@v5
       if: runner.os == 'macOS'
@@ -43,7 +46,7 @@ jobs:
       with:
         name: MDToy-${{ matrix.os }}-app
         path: MDToy-macos-app.tar.gz
-
+    
     - uses: actions/upload-artifact@v5
       if: runner.os != 'macOS'
       with:

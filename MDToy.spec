@@ -12,6 +12,9 @@ datas = [
     ('ThirdPartyNotices.html', '.'),
     ('LICENSE.txt', '.'),
 ]
+# nvidia is a couple gigabytes, appears in the Ubuntu compilation environment on GitHub,
+# and isn't needed because I use CPU version.
+excludes = ['nvidia']
 
 a = Analysis(
     ['src/molecular_dynamics_toy/__main__.py'],
@@ -22,7 +25,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=excludes,
     noarchive=False,
     optimize=1,
 	module_collection_mode = {
