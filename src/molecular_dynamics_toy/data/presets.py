@@ -306,6 +306,7 @@ PRESETS: Dict[str, tuple[str, Callable[[], Atoms]]] = {
     "dca": ("DCA molecule", _load_from_file("DCA.vasp")),
     "hat": ("HAT molecule", _load_from_file("HAT.vasp")),
     "eu526": ("Eu5Sn2As6", _load_from_file("Eu5Sn2As6.vasp")),
+    "cbamnbr4": ("(18-crown-6)BaMnBr4", _load_from_file("CBaMnBr4.vasp")),
 }
 
 
