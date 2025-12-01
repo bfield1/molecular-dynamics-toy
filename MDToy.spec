@@ -14,7 +14,8 @@ datas = [
 ]
 # nvidia is a couple gigabytes, appears in the Ubuntu compilation environment on GitHub,
 # and isn't needed because I use CPU version.
-excludes = ['nvidia', 'nvidia.cuda_nvrtc', 'nvidia.cuda_runtime', 'nvidia.cuda_cupti', 'nvidia.cudnn', 'nvidia.cublas', 'nvidia.cufft', 'nvidia.curand', 'nvidia.cusolver', 'nvidia.cusparse', 'nvidia.cusparselt', 'nvidia.nccl', 'nvidia.nvshmem', 'nvidia.nvtx', 'nvidia.nvjitlink', 'nvidia.cufile']
+# (Unclear if this is actually working. Doesn't seem to be.)
+excludes = ['nvidia']
 
 a = Analysis(
     ['src/molecular_dynamics_toy/__main__.py'],
