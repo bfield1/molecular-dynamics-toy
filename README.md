@@ -31,7 +31,7 @@ executable inside a directory. The app build is easier to use, although the
 executable provides a debug window.
 
 Unzip/unarchive/extract the file (attempting to open it will usually do this).
-For the MacOS and Ubuntu releases, you will need to extract it twice (this is
+For the MacOS and Ubuntu releases, you may need to extract it twice (this is
 a limitation of GitHub's workflows).
 
 Enter the MDToy directory then click on/open MDToy.

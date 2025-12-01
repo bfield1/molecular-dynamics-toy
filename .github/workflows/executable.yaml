@@ -17,6 +17,7 @@ jobs:
         cache: 'pip'
       
     - name: Install dependencies
+      if: runner.os != 'Linux'
       run: |
         df -h
         python -m pip install --upgrade pip setuptools
@@ -24,12 +25,15 @@ jobs:
         python -m pip install -e .
         df -h
     
-    - name: Clean up and remove nvidia
-      # PyInstaller tries to include the CUDA/Nvidia modules if they exist, but we don't want that
-      # because it's way too big.
+    - name: Install dependencies (Ubuntu)
+      # We need to explicitly tell Ubuntu/Linux to install the CPU-only version of Torch.
       if: runner.os == 'Linux'
       run: |
-        python -m pip uninstall --yes nvidia-cusparselt-cu12 nvidia-nvtx-cu12 nvidia-nvshmem-cu12 nvidia-nvjitlink-cu12 nvidia-nccl-cu12 nvidia-curand-cu12 nvidia-cufile-cu12 nvidia-cuda-runtime-cu12 nvidia-cuda-nvrtc-cu12 nvidia-cuda-cupti-cu12 nvidia-cublas-cu12 nvidia-cusparse-cu12 nvidia-cufft-cu12 nvidia-cudnn-cu12 nvidia-cusolver-cu12
+        df -h
+        python -m pip install --upgrade pip setuptools
+        python -m pip install pyinstaller
+        python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install -e .
         df -h
         
     - name: Compile executable
