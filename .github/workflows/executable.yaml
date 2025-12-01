@@ -18,12 +18,16 @@ jobs:
       
     - name: Install dependencies
       run: |
+        df -h
         python -m pip install --upgrade pip setuptools
         python -m pip install pyinstaller
         python -m pip install -e .
+        df -h
         
     - name: Compile executable
-      run: pyinstaller MDToy.spec
+      run: |
+        pyinstaller MDToy.spec
+        df -h
 
     - name: Create tarballs (macOS only)
       if: runner.os == 'macOS'
