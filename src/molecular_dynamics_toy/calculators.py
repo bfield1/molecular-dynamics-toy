@@ -8,7 +8,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Cache for calculators to avoid re-initialization
-_calculator_cache: Dict[str, Any] = {}  # noqa: F824
+_calculator_cache: Dict[str, Any] = {}
 
 def get_mattersim_calculator(device: str = "cpu", **kwargs) -> Any:
     """Get MatterSim calculator instance.
