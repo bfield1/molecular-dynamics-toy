@@ -81,7 +81,7 @@ def create_water_molecule() -> Atoms:
         Atoms object containing H2O in a cubic cell.
     """
     atoms = _molecule_in_box('H2O', vacuum=5.0)
-    atoms.rotate(90, 'y')
+    atoms.rotate(90, 'y', center='COU')
     logger.info("Created water molecule preset")
     return atoms
 
@@ -126,7 +126,7 @@ def create_co2_molecule() -> Atoms:
         Atoms object containing CO2 in a cubic cell.
     """
     atoms = _molecule_in_box('CO2', vacuum=5.0)
-    atoms.rotate(90, 'y')
+    atoms.rotate(90, 'y', center='COU')
     logger.info("Created CO2 molecule preset")
     return atoms
 
