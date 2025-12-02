@@ -307,7 +307,8 @@ _atom_covalent_radii_data = {
 # Create defaultdicts with default values
 ATOM_COLORS = defaultdict(lambda: _DEFAULT_ATOM_COLOR, _atom_colors_data)
 ATOM_VDW_RADII = defaultdict(lambda: _DEFAULT_ATOM_RADIUS, _atom_radii_data)
-ATOM_COVALENT_RADII = defaultdict(lambda: _DEFAULT_ATOM_RADIUS * 0.6, _atom_covalent_radii_data)
+ATOM_COVALENT_RADII = defaultdict(
+    lambda: _DEFAULT_ATOM_RADIUS * 0.6, _atom_covalent_radii_data)
 
 # Default to covalent radii
 ATOM_RADII = ATOM_COVALENT_RADII
