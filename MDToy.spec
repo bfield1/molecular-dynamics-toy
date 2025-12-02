@@ -12,10 +12,7 @@ datas = [
     ('ThirdPartyNotices.html', '.'),
     ('LICENSE.txt', '.'),
 ]
-# nvidia is a couple gigabytes, appears in the Ubuntu compilation environment on GitHub,
-# and isn't needed because I use CPU version.
-# (Unclear if this is actually working. Doesn't seem to be.)
-excludes = ['nvidia']
+excludes = []
 
 a = Analysis(
     ['src/molecular_dynamics_toy/__main__.py'],
