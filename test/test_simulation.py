@@ -320,3 +320,76 @@ def test_simulation_widget_update_with_speed(pygame_init):
     # Positions should have changed
     final_positions = widget.engine.atoms.get_positions()
     assert not np.array_equal(initial_positions, final_positions)
+
+def test_simulation_widget_render_with_atoms(pygame_init):
+    """Test that SimulationWidget renders atoms correctly."""
+    from molecular_dynamics_toy.calculators import MockCalculator
+    from ase import Atoms
+    
+    rect = pygame.Rect(0, 0, 400, 400)
+    calculator = MockCalculator()
+    widget = SimulationWidget(rect, calculator=calculator)
+    
+    # Add some atoms to the engine
+    atoms = Atoms('H2O', positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    atoms.set_cell([10, 10, 10])
+    atoms.pbc = True
+    widget.engine.atoms = atoms
+    
+    # Create surface and render
+    surface = pygame.Surface((800, 600))
+    widget.render(surface)  # Should not raise
+    
+    # Test rendering with different atom types
+    atoms = Atoms('CNO', positions=[[2, 2, 2], [3, 3, 3], [4, 4, 4]])
+    atoms.set_cell([10, 10, 10])
+    atoms.pbc = True
+    widget.engine.atoms = atoms
+    
+    widget.render(surface)  # Should not raise
+
+
+def test_simulation_widget_reset(pygame_init):
+    """Test that SimulationWidget.reset() clears atoms."""
+    from molecular_dynamics_toy.calculators import MockCalculator
+    from ase import Atoms
+    
+    rect = pygame.Rect(0, 0, 400, 400)
+    calculator = MockCalculator()
+    widget = SimulationWidget(rect, calculator=calculator)
+    
+    # Add some atoms
+    atoms = Atoms('H2O', positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+    atoms.set_cell([10, 10, 10])
+    atoms.pbc = True
+    widget.engine.atoms = atoms
+    
+    assert len(widget.engine.atoms) == 3
+    
+    # Reset should clear atoms
+    widget.reset()
+    
+    assert len(widget.engine.atoms) == 0
+
+
+def test_simulation_widget_reset_multiple_times(pygame_init):
+    """Test that reset can be called multiple times safely."""
+    from molecular_dynamics_toy.calculators import MockCalculator
+    from ase import Atoms
+    
+    rect = pygame.Rect(0, 0, 400, 400)
+    calculator = MockCalculator()
+    widget = SimulationWidget(rect, calculator=calculator)
+    
+    # Add atoms
+    atoms = Atoms('H', positions=[[5, 5, 5]])
+    atoms.set_cell([10, 10, 10])
+    atoms.pbc = True
+    widget.engine.atoms = atoms
+    
+    # Reset multiple times
+    widget.reset()
+    widget.reset()
+    widget.reset()
+    
+    assert len(widget.engine.atoms) == 0

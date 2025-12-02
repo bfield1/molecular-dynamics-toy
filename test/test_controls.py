@@ -903,3 +903,38 @@ def test_controls_widget_cell_size_preserved_on_resize(pygame_init):
 
     # Cell size should be preserved
     assert abs(widget.cell_size - 25.5) < 1e-9
+
+def test_controls_widget_render(pygame_init):
+    """Test that ControlsWidget renders all controls without crashing."""
+    rect = pygame.Rect(0, 0, 500, 400)
+    widget = ControlsWidget(rect)
+    
+    surface = pygame.Surface((800, 600))
+    
+    # Should render without raising
+    widget.render(surface)
+    
+    # Test rendering in different states
+    widget.play_pause_button.playing = True
+    widget.render(surface)
+    
+    # Test with hovered states
+    if widget.play_pause_button:
+        widget.play_pause_button.hovered = True
+    if widget.reset_button:
+        widget.reset_button.hovered = True
+    if widget.steps_control:
+        widget.steps_control.decrease_button.hovered = True
+    if widget.timestep_control:
+        widget.timestep_control.increase_button.hovered = True
+    if widget.temperature_slider:
+        widget.temperature_slider.hovered = True
+    if widget.cell_size_control:
+        for button in widget.cell_size_control.decrease_buttons:
+            button.hovered = True
+    if widget.load_preset_button:
+        widget.load_preset_button.hovered = True
+    if widget.menu_button:
+        widget.menu_button.hovered = True
+    
+    widget.render(surface)
