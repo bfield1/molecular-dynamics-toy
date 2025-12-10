@@ -60,6 +60,10 @@ conda activate mdtoy
 
 Then, install the app with
 ```
+pip install molecular-dynamics-toy
+```
+or, if you want the latest in-development version, with
+```
 pip install git+https://github.com/bfield1/molecular-dynamics-toy
 ```
 
