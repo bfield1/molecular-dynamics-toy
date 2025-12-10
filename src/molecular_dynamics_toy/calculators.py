@@ -61,7 +61,7 @@ class MockCalculator:
 
         for i in range(len(atoms)):
             for j in range(i + 1, len(atoms)):
-                vec = atoms.positions[j] - atoms.positions[i]
+                vec = atoms.get_distance(i, j, mic=True, vector=True)
                 dist = np.linalg.norm(vec)
                 if dist > 0:
                     force_mag = k * (dist - equilibrium_distance)

@@ -61,16 +61,7 @@ def test_h2_molecule_equilibration():
     # Run simulation
     engine.run(100)
 
-    # Take 3 samples just to reduce the rare but non-zero chance of
-    # random thermostat taking us outside the reasonable range.
-    bond_length = 0
-    N = 3
-    for _ in range(N):
-        # Run simulation
-        engine.run(20)
-        # Calculate average bond length
-        bond_length += engine.atoms.get_distance(0, 1, mic=True) / N
-
+    bond_length = engine.atoms.get_distance(0, 1, mic=True)
     # Check bond length is in reasonable range
     assert 0.69 < bond_length < 0.79, f"Bond length {bond_length:.3f} Å out of range"
 
