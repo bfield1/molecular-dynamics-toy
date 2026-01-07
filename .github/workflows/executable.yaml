@@ -2,6 +2,8 @@ on:
   workflow_dispatch:
   release:
     types: [published]
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -71,7 +73,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: (github.ref_type == 'tag') && (runner.os == 'Windows')
       with:
-        files: dist/*
+        files: dist\*
 
     - uses: actions/upload-artifact@v5
       if: runner.os == 'macOS'
