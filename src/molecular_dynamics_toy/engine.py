@@ -2,7 +2,7 @@
 
 import logging
 import numpy as np
-from ase import Atoms, units
+from ase import Atom, Atoms, units
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.md.langevin import Langevin
 from typing import Optional
@@ -185,7 +185,6 @@ class MDEngine:
             initialize_velocity: If True, initialize velocity from Maxwell-Boltzmann
                 distribution at current temperature.
         """
-        from ase import Atom
 
         new_atom = Atom(symbol, position=position)
         self._atoms.append(new_atom)
@@ -203,4 +202,4 @@ class MDEngine:
 
         # Reset integrator when atoms are added
         self._integrator = None
-        logger.debug(f"Added {symbol} atom at {position}")
+        logger.info(f"Added {symbol} atom at {position}")

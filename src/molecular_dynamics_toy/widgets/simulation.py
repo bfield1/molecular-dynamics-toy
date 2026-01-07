@@ -6,6 +6,7 @@ import numpy as np
 from typing import Optional, Tuple
 
 from ase import Atoms
+import ase.geometry
 
 from molecular_dynamics_toy.engine import MDEngine
 from molecular_dynamics_toy.data import colors
@@ -41,6 +42,9 @@ class SimulationWidget:
 
         # Select radii based on type
         self.atom_radii = ATOM_VDW_RADII if radius_type == "vdw" else ATOM_COVALENT_RADII
+
+        # Distance threshold in Angstrom to avoid putting atoms on top of each other.
+        self.collision_threshold = 0.1
 
         self._create_engine()
         logger.info("SimulationWidget initialized")
@@ -192,13 +196,13 @@ class SimulationWidget:
 
         if sim_pos is not None:
             self.engine.add_atom(self.selected_element, sim_pos)
-            logger.info(f"Added {self.selected_element} atom at {sim_pos}")
 
     def _screen_to_sim(self, screen_pos: Tuple[int, int], cell_rect: pygame.Rect) -> Optional[np.ndarray]:
         """Convert screen coordinates to 3D simulation coordinates.
 
         Uses the center of mass of existing atoms for z-coordinate, or
         center of cell if no atoms exist.
+        Also checks for collisions.
 
         Args:
             screen_pos: Screen position (x, y).
@@ -221,6 +225,32 @@ class SimulationWidget:
             # Use center of mass z-coordinate
             positions = self.engine.atoms.get_positions()
             z_angstrom = np.mean(positions[:, 2])
+            # Check for collisions.
+            if self.collision_threshold > 0:
+                found = False
+                fallback_z = None
+                # Step through increments, increasing the z-coordinate until no collision is found.
+                for dz in np.linspace(0, cell_size, int(cell_size/self.collision_threshold)):
+                    # Wrap coordinates
+                    z_angstrom = (z_angstrom + dz) % cell_size
+                    # If all atoms are further away from the point than the collision threshold, we've found our point.
+                    _, distances = ase.geometry.get_distances(positions, [[x_angstrom, y_angstrom, z_angstrom]], cell=self.engine.atoms.cell, pbc=True)
+                    if np.all(distances > self.collision_threshold):
+                        found = True
+                        break
+                    elif fallback_z is None and np.all(distances > 0):
+                        # A fall-back. If no space with the specified collision threshold can be found,
+                        # then at least find a space where the distances are non-zero.
+                        # The simulation breaks if any distances are zero.
+                        fallback_z = z_angstrom
+                if not found:
+                    if fallback_z is None:
+                        logger.error(f"Unable to find anywhere safe to place an atom at ({x_angstrom},{y_angstrom}) (zero distance)! Not placing atom.")
+                        return None
+                    else:
+                        logger.warning(f"Position ({x_angstrom},{y_angstrom}) is rather crowded (no free space of more than {self.collision_threshold} A). \
+                                       Atoms might be unhappy.")
+
         else:
             # Use center of cell
             z_angstrom = cell_size / 2

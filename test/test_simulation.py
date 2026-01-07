@@ -299,6 +299,28 @@ def test_simulation_widget_z_coordinate_empty_cell(pygame_init):
     new_atom_z = widget.engine.atoms.get_positions()[0, 2]
     assert abs(new_atom_z - cell_size / 2) < 0.1
 
+def test_simulation_widget_double_click(pygame_init):
+    """Test that attempting to place two atoms in the same place applies a z-offset (to avoid divide-by-zero)."""
+    rect = pygame.Rect(0, 0, 700, 700)
+    calc = get_calculator("mock")
+    widget = SimulationWidget(rect, calculator=calc)
+
+    widget.selected_element = 'H'
+
+    cell_rect = widget._get_cell_rect()
+    click_event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN,
+        {'button': 1, 'pos': cell_rect.center}
+    )
+    # Click twice in the same place.
+    widget.handle_event(click_event)
+    widget.handle_event(click_event)
+
+    # Check that new atom has z at cell center
+    positions = widget.engine.atoms.get_positions()
+    assert positions[0, 0] == positions[1, 0], "x-positions incorrectly offset on double click."
+    assert positions[0, 1] == positions[1, 1], "y-positions incorrectly offset on double click."
+    assert positions[0, 2] != positions[1, 2], "z-positions should be offset on double click."
 
 def test_simulation_widget_update_with_speed(pygame_init):
     """Test that simulation widget respects speed parameter."""
