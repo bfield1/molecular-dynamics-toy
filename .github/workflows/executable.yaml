@@ -55,6 +55,10 @@ jobs:
       if: runner.os == 'Linux'
       run: tar -czf MDToy-ubuntu.tar.gz -C dist MDToy
 
+    - name: Create zip archive (Windows only)
+      if: runner.os == 'Windows'
+      run: Compress-Archive -Path dist/* -Destination MDToy-windows.zip
+    
     - name: Upload to release (MacOS)
       uses: softprops/action-gh-release@v2
       if: (github.ref_type == 'tag') && (runner.os == 'macOS')
@@ -73,7 +77,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: (github.ref_type == 'tag') && (runner.os == 'Windows')
       with:
-        files: dist\*
+        files: MDToy-windows.zip
 
     - uses: actions/upload-artifact@v5
       if: runner.os == 'macOS'
