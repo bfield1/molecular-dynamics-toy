@@ -25,14 +25,11 @@ of any results.
 
 Go to [Releases](https://github.com/bfield1/molecular-dynamics-toy/releases)
 and download the file corresponding to your operating system.
-Windows and MacOS are currently supported.
 MacOS has two builds: an app (which you click on like normal apps), and an
 executable inside a directory. The app build is easier to use, although the
 executable provides a debug window.
 
 Unzip/unarchive/extract the file (attempting to open it will usually do this).
-For the MacOS and Ubuntu releases, you may need to extract it twice (this is
-a limitation of GitHub's workflows).
 
 Enter the MDToy directory then click on/open MDToy.
 
@@ -66,6 +63,9 @@ or, if you want the latest in-development version, with
 ```
 pip install git+https://github.com/bfield1/molecular-dynamics-toy
 ```
+Note that the MatterSim dependency requires a C++ compiler;
+it should tell you where to find one when you attempt to `pip install` if you
+don't already have one.
 
 Finally, run the app with
 ```
