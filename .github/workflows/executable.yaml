@@ -56,12 +56,12 @@ jobs:
       run: tar -czf MDToy-ubuntu.tar.gz -C dist MDToy
 
     - name: Create zip archive (Windows only)
-      if: runner.os == 'Windows'
+      if: (github.event_name == 'release') && (runner.os == 'Windows')
       run: Compress-Archive -Path dist/* -Destination MDToy-windows.zip
     
     - name: Upload to release (MacOS)
       uses: softprops/action-gh-release@v2
-      if: (github.ref_type == 'tag') && (runner.os == 'macOS')
+      if: (github.event_name == 'release') && (github.ref_type == 'tag') && (runner.os == 'macOS')
       with:
         files: |
           MDToy-macos-dir.tar.gz
@@ -69,38 +69,38 @@ jobs:
     
     - name: Upload to release (Linux)
       uses: softprops/action-gh-release@v2
-      if: (github.ref_type == 'tag') && (runner.os == 'Linux')
+      if: (github.event_name == 'release') && (github.ref_type == 'tag') && (runner.os == 'Linux')
       with:
         files: MDToy-ubuntu.tar.gz
       
     - name: Upload to release (Windows)
       uses: softprops/action-gh-release@v2
-      if: (github.ref_type == 'tag') && (runner.os == 'Windows')
+      if: (github.event_name == 'release') && (github.ref_type == 'tag') && (runner.os == 'Windows')
       with:
         files: MDToy-windows.zip
 
     - uses: actions/upload-artifact@v5
-      if: runner.os == 'macOS'
+      if: (runner.os == 'macOS') && (github.event_name == 'workflow_dispatch')
       with:
         name: MDToy-${{ matrix.os }}-dir
         path: MDToy-macos-dir.tar.gz
         compression-level: 0
 
     - uses: actions/upload-artifact@v5
-      if: runner.os == 'macOS'
+      if: (runner.os == 'macOS') && (github.event_name == 'workflow_dispatch')
       with:
         name: MDToy-${{ matrix.os }}-app
         path: MDToy-macos-app.tar.gz
         compression-level: 0
     
     - uses: actions/upload-artifact@v5
-      if: runner.os == 'Windows'
+      if: (runner.os == 'Windows') && (github.event_name == 'workflow_dispatch')
       with:
         name: MDToy-${{ matrix.os }}
         path: dist/*
     
     - uses: actions/upload-artifact@v5
-      if: runner.os == 'Linux'
+      if: (runner.os == 'Linux') && (github.event_name == 'workflow_dispatch')
       with:
         name: MDToy-${{ matrix.os }}
         path: MDToy-ubuntu.tar.gz
