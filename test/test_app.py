@@ -251,3 +251,34 @@ def test_mdapplication_selected_element_sync(pygame_init):
     app.update()
     
     assert app.simulation_widget.selected_element == 'H'
+
+
+def test_helpoverlay(pygame_init):
+    # It's rather hard to test the help overlay without mocking up
+    # all the UI elements which it connects to.
+    # So I may as well cut out the middle-man and do an integration test
+    app = MDApplication(calculator = "mock", show_fps=False)
+
+    assert app.help_overlay.visible == False, "Help overlay didn't start invisible"
+    # Click the button to open the overlay
+    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN,
+                                         {'button': 1, 'pos': app.help_button.rect.center}))
+    app.handle_events()
+    assert app.help_overlay.visible == True, \
+        "Help overlay didn't become visible when help button was clicked."
+    # Check that rendering runs without breaking.
+    app.help_overlay.render(app.screen)
+    # Another click to close it
+    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN,
+                                         {'button': 1, 'pos': (1,1)}))
+    app.handle_events()
+    assert app.help_overlay.visible == False, \
+        "Help overlay didn't close when mouse button was clicked."
+    # Escape should also make it go away.
+    app.help_overlay.open()
+    assert app.help_overlay.visible == True, \
+        "HelpOverlay.open() didn't open."
+    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, {'key': pygame.K_ESCAPE}))
+    app.handle_events()
+    assert app.help_overlay.visible == False, \
+        "Help overlay didn't close when ESC was pressed."
