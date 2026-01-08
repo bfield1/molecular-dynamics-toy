@@ -9,8 +9,13 @@ import importlib.metadata
 
 import pygame
 
-from molecular_dynamics_toy.widgets.base import Menu, TextBox
+from molecular_dynamics_toy.widgets.base import Menu, TextBox, TextButton
 from molecular_dynamics_toy.data import presets
+import molecular_dynamics_toy.data.colors as colors
+
+from molecular_dynamics_toy.widgets.controls import ControlsWidget
+from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
+from molecular_dynamics_toy.widgets.simulation import SimulationWidget
 
 logger = logging.getLogger(__name__)
 
@@ -167,3 +172,117 @@ class MainMenu(Menu):
         logger.info("Exit requested from menu")
         if self.exit_callback:
             self.exit_callback()
+
+
+class HelpOverlay():
+    """Overlays the help dialogues onto the app."""
+
+    # Add alpha channel to the colour
+    TEXT_BACKGROUND_COLOR = colors.MENU_BG_COLOR
+
+    def __init__(self, controls_widget: ControlsWidget = None,
+                 periodic_table_widget: PeriodicTableWidget = None,
+                 simulation_widget: SimulationWidget = None):
+        """
+        Arguments are the widgets that need to be annotated with help text.
+        """
+        self.visible = False
+        self.controls_widget = controls_widget
+        self.periodic_table_widget = periodic_table_widget
+        self.simulation_widget = simulation_widget
+        
+        # Display settings
+        # Use system font with antialiasing
+        self.font = pygame.font.SysFont('arial', 20, bold=False)
+    
+    def open(self):
+        """Open the overlay."""
+        self.visible = True
+        logger.info(f"Help Overlay opened")
+
+    def close(self):
+        """Close the overlay."""
+        self.visible = False
+        logger.info(f"Help Overlay closed")
+
+    def toggle(self):
+        """Toggle overlay visibility."""
+        if self.visible:
+            self.close()
+        else:
+            self.open()
+    
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        """Handle pygame events.
+
+        Args:
+            event: Pygame event to process.
+
+        Returns:
+            True if event was handled by overlay (prevents propagation).
+            (Overlay locks )
+        """
+        if not self.visible:
+            return False
+
+        # Overlay is visible - consume all mouse events to prevent interaction with widgets behind it
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click
+                # When we click, we close the overlay.
+                self.close()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                # Also permit closing with ESCAPE key
+                self.close()
+        return True
+
+    def render(self, surface: pygame.Surface):
+        """Render the menu.
+
+        Args:
+            surface: Surface to render onto.
+        """
+        if not self.visible:
+            return
+
+        # Draw semi-transparent over the entire window.
+        overlay = pygame.Surface((surface.get_width(), surface.get_height()))
+        overlay.set_alpha(100)
+        overlay.fill(colors.MENU_OVERLAY_COLOR)
+        surface.blit(overlay, (0, 0))
+
+        # Go through each widget element we want to annotate and annotate it.
+        self._draw_text(surface, 
+                        "Select an element to add to the simulation.",
+                        *self.periodic_table_widget.rect.center)
+        self._draw_text(surface,
+                        "Click here to add the selected element to the simulation cell.",
+                        *self.simulation_widget.rect.center)
+        self._draw_text(surface,
+                        "Play/Pause",
+                        *self.controls_widget.play_pause_button.rect.center)
+        self._draw_text(surface,
+                        "Clear",
+                        *self.controls_widget.reset_button.rect.center)
+        self._draw_text(surface,
+                        "Load preset",
+                        *self.controls_widget.load_preset_button.rect.center)
+        self._draw_text(surface,
+                        "Menu",
+                        *self.controls_widget.menu_button.rect.center)
+    
+    def _draw_text(self, surface: pygame.Surface, text: str, x: float, y: float):
+        """Draw help overlay text at position x, y"""
+        text_surface = self.font.render(
+            text, True, colors.TEXT_COLOR)
+        text_rect = text_surface.get_rect(
+            centerx = x,
+            centery = y,
+        )
+        # Draw the transparent background (font.render doesn't support transparency)
+        bg_surf = pygame.Surface(text_rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(bg_surf, self.TEXT_BACKGROUND_COLOR, bg_surf.get_rect())
+        bg_surf.set_alpha(150)
+        surface.blit(bg_surf, text_rect)
+        # Add the text.
+        surface.blit(text_surface, text_rect)

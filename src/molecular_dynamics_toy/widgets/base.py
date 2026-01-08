@@ -43,6 +43,17 @@ class Button:
         self.enabled = enabled
         self.callback = callback
 
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        """Generic event handling for buttons, for stand-alone buttons.
+        
+        Returns True if the button was clicked"""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Left click
+                return self.handle_click(event.pos)
+        elif event.type == pygame.MOUSEMOTION:
+            self.handle_hover(event.pos)
+        return False
+
     def handle_click(self, pos: Tuple[int, int]) -> bool:
         """Check if position is inside button and handle click.
 

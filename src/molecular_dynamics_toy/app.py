@@ -8,7 +8,8 @@ import sys
 from molecular_dynamics_toy.widgets.picker import PeriodicTableWidget
 from molecular_dynamics_toy.widgets.controls import ControlsWidget
 from molecular_dynamics_toy.widgets.simulation import SimulationWidget
-from molecular_dynamics_toy.widgets.menus import PresetsMenu, MainMenu
+from molecular_dynamics_toy.widgets.menus import PresetsMenu, MainMenu, HelpOverlay
+from molecular_dynamics_toy.widgets.base import TextButton
 from molecular_dynamics_toy.data.presets import create_preset
 from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.calculators import get_calculator
@@ -39,6 +40,7 @@ class MDApplication:
     SIMULATION_RECT = pygame.Rect(50, 50, 700, 700)
     PERIODIC_TABLE_RECT = pygame.Rect(800, 50, 550, 400)
     CONTROLS_RECT = pygame.Rect(800, 500, 550, 250)
+    HELP_BUTTON_RECT = pygame.Rect(1350, 25, 25, 25)
 
     # Colors
     BG_COLOR = colors.BG_COLOR
@@ -70,7 +72,7 @@ class MDApplication:
         self.font = pygame.font.Font(None, 24)
         self.fps_font = pygame.font.Font(None, 20)
 
-        # Widgets (to be implemented)
+        # Widgets
         self.simulation_widget = SimulationWidget(
             self.SIMULATION_RECT, calculator=get_calculator(calculator))
         self.periodic_table_widget = PeriodicTableWidget(
@@ -81,6 +83,11 @@ class MDApplication:
             0, 0, 300, 400), load_callback=self._load_preset)
         self.main_menu = MainMenu(pygame.Rect(
             0, 0, 300, 300), exit_callback=self.exit)
+        # Help overlay
+        self.help_overlay = HelpOverlay(self.controls_widget, self.periodic_table_widget,
+                                        self.simulation_widget)
+        self.help_button = TextButton(self.HELP_BUTTON_RECT, "?",
+                                      callback=self.help_overlay.open, font_size=30)
 
         self._update_layout()
 
@@ -113,8 +120,12 @@ class MDApplication:
                 continue  # Event consumed by menu
             if self.main_menu and self.main_menu.handle_event(event):
                 continue  # Event consumed by menu
+            if self.help_overlay and self.help_overlay.handle_event(event):
+                continue
 
             # Pass events to widgets when they exist
+            if self.help_button:
+                self.help_button.handle_event(event)
             if self.simulation_widget:
                 self.simulation_widget.handle_event(event)
             if self.periodic_table_widget:
@@ -179,6 +190,11 @@ class MDApplication:
             self.periodic_table_widget.render(self.screen)
         if self.controls_widget:
             self.controls_widget.render(self.screen)
+        
+        if self.help_button:
+            self.help_button.render(self.screen)
+        if self.help_overlay:
+            self.help_overlay.render(self.screen)
 
         # Render menus on top
         if self.preset_menu:
@@ -282,6 +298,11 @@ class MDApplication:
             controls_width, self.WINDOW_HEIGHT - controls_height - margin,
             controls_width, controls_height
         )
+        self.HELP_BUTTON_RECT = pygame.Rect(
+            self.WINDOW_WIDTH - margin,
+            margin / 2,
+            margin / 2, margin / 2
+        )
 
         # Update widget rects if they exist
         if self.periodic_table_widget:
@@ -290,6 +311,8 @@ class MDApplication:
             self.simulation_widget.set_rect(self.SIMULATION_RECT)
         if self.controls_widget:
             self.controls_widget.set_rect(self.CONTROLS_RECT)
+        if self.help_button:
+            self.help_button.rect = self.HELP_BUTTON_RECT
         # Re-center menus after resize
         if self.preset_menu:
             self.preset_menu.center(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
