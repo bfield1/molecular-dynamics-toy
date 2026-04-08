@@ -77,13 +77,14 @@ class ResetButton(Button):
     # Colors
     ICON_COLOR = colors.ICON_RESET_COLOR  # Reddish for reset
 
-    def __init__(self, rect: pygame.Rect):
+    def __init__(self, rect: pygame.Rect, callback=None):
         """Initialize the reset button.
 
         Args:
             rect: Rectangle defining position and size.
+            callback: Optional function to call when clicked.
         """
-        super().__init__(rect)
+        super().__init__(rect, callback=callback)
 
     def on_click(self):
         """Log reset button click."""
@@ -517,13 +518,14 @@ class LoadPresetButton(Button):
 
     ICON_COLOR = colors.CONTROL_ICON_COLOR
 
-    def __init__(self, rect: pygame.Rect):
+    def __init__(self, rect: pygame.Rect, callback=None):
         """Initialize load preset button.
 
         Args:
             rect: Rectangle defining position and size.
+            callback: Optional function to call when clicked.
         """
-        super().__init__(rect)
+        super().__init__(rect, callback=callback)
 
     def render_content(self, surface: pygame.Surface):
         """Render download/import icon (arrow down into rectangle).
@@ -568,13 +570,14 @@ class MenuButton(Button):
 
     ICON_COLOR = colors.CONTROL_ICON_COLOR
 
-    def __init__(self, rect: pygame.Rect):
+    def __init__(self, rect: pygame.Rect, callback=None):
         """Initialize menu button.
 
         Args:
             rect: Rectangle defining position and size.
+            callback: Optional function to call when clicked.
         """
-        super().__init__(rect)
+        super().__init__(rect, callback=callback)
 
     def render_content(self, surface: pygame.Surface):
         """Render hamburger menu icon (three horizontal lines).
@@ -628,9 +631,16 @@ class ControlsWidget:
         self.temperature_slider = None
         self.cell_size_control = None
         self.load_preset_button = None
+        self.menu_button = None
         self.reset_requested = False
         self.open_preset_menu_requested = False
         self.open_main_menu_requested = False
+
+        # Ordered lists used by handle_event and render.
+        # All controls that support handle_click, handle_hover, and render.
+        self._controls = []
+        # Controls that additionally support handle_release and handle_drag.
+        self._slider_controls = []
 
         self._create_controls()
         logger.info("ControlsWidget initialized")
@@ -643,6 +653,10 @@ class ControlsWidget:
         old_timestep = self.timestep_control.value if self.timestep_control else 1
         old_temp = self.temperature_slider.temperature if self.temperature_slider else 300.0
         old_cell_size = self.cell_size_control.cell_size if self.cell_size_control else 20.0
+
+        # Reset iteration lists before repopulating.
+        self._controls = []
+        self._slider_controls = []
 
         margin = 20
         button_size = 60
@@ -657,15 +671,20 @@ class ControlsWidget:
         )
         self.play_pause_button = PlayPauseButton(play_button_rect)
         self.play_pause_button.playing = old_playing
+        self._controls.append(self.play_pause_button)
 
-        # Create reset button
+        # Create reset button; callback sets the reset_requested flag.
         reset_button_rect = pygame.Rect(
             self.rect.left + margin + button_size + spacing,
             self.rect.top + margin,
             button_size,
             button_size
         )
-        self.reset_button = ResetButton(reset_button_rect)
+        self.reset_button = ResetButton(
+            reset_button_rect,
+            callback=lambda: setattr(self, 'reset_requested', True)
+        )
+        self._controls.append(self.reset_button)
 
         # Create speed controls (steps per frame and timestep)
         speed_control_width = 120
@@ -682,6 +701,7 @@ class ControlsWidget:
             label="Steps/Frame",
             initial_value=old_steps
         )
+        self._controls.append(self.steps_control)
 
         timestep_control_rect = pygame.Rect(
             self.rect.left + margin + 2 *
@@ -697,6 +717,7 @@ class ControlsWidget:
             increment=0.5,
             min_value=0.5
         )
+        self._controls.append(self.timestep_control)
 
         # Create temperature slider
         slider_top = self.rect.top + margin + button_size + spacing
@@ -708,6 +729,8 @@ class ControlsWidget:
         )
         self.temperature_slider = TemperatureSlider(
             slider_rect, initial_temp=old_temp, max_temp=2000)
+        self._controls.append(self.temperature_slider)
+        self._slider_controls.append(self.temperature_slider)
 
         # Create cell size control
         cell_size_top = slider_top + 60 + spacing
@@ -719,24 +742,34 @@ class ControlsWidget:
         )
         self.cell_size_control = CellSizeControl(
             cell_size_rect, initial_size=old_cell_size)
+        self._controls.append(self.cell_size_control)
 
-        # Create load preset button (next to cell size control)
+        # Create load preset button (next to cell size control);
+        # callback sets the open_preset_menu_requested flag.
         load_preset_rect = pygame.Rect(
             self.rect.left + margin + 200 + spacing,
             cell_size_top + 80 - button_size,
             button_size,
             button_size
         )
-        self.load_preset_button = LoadPresetButton(load_preset_rect)
+        self.load_preset_button = LoadPresetButton(
+            load_preset_rect,
+            callback=lambda: setattr(self, 'open_preset_menu_requested', True)
+        )
+        self._controls.append(self.load_preset_button)
 
-        # Create menu button
+        # Create menu button; callback sets the open_main_menu_requested flag.
         menu_button_rect = pygame.Rect(
             self.rect.left + margin + 200 + button_size + 3 * spacing,
             cell_size_top + 80 - button_size,
             button_size,
             button_size
         )
-        self.menu_button = MenuButton(menu_button_rect)
+        self.menu_button = MenuButton(
+            menu_button_rect,
+            callback=lambda: setattr(self, 'open_main_menu_requested', True)
+        )
+        self._controls.append(self.menu_button)
 
     @property
     def playing(self) -> bool:
@@ -771,49 +804,19 @@ class ControlsWidget:
         """
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
-                if self.play_pause_button:
-                    self.play_pause_button.handle_click(event.pos)
-                if self.reset_button:
-                    if self.reset_button.handle_click(event.pos):
-                        self.reset_requested = True
-                if self.steps_control:
-                    self.steps_control.handle_click(event.pos)
-                if self.timestep_control:
-                    self.timestep_control.handle_click(event.pos)
-                if self.temperature_slider:
-                    self.temperature_slider.handle_click(event.pos)
-                if self.cell_size_control:
-                    self.cell_size_control.handle_click(event.pos)
-                if self.load_preset_button:
-                    if self.load_preset_button.handle_click(event.pos):
-                        self.open_preset_menu_requested = True
-                if self.menu_button:
-                    if self.menu_button.handle_click(event.pos):
-                        self.open_main_menu_requested = True
+                for control in self._controls:
+                    control.handle_click(event.pos)
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # Left click release
-                if self.temperature_slider:
-                    self.temperature_slider.handle_release()
+                for control in self._slider_controls:
+                    control.handle_release()
 
         elif event.type == pygame.MOUSEMOTION:
-            if self.play_pause_button:
-                self.play_pause_button.handle_hover(event.pos)
-            if self.reset_button:
-                self.reset_button.handle_hover(event.pos)
-            if self.steps_control:
-                self.steps_control.handle_hover(event.pos)
-            if self.timestep_control:
-                self.timestep_control.handle_hover(event.pos)
-            if self.temperature_slider:
-                self.temperature_slider.handle_hover(event.pos)
-                self.temperature_slider.handle_drag(event.pos)
-            if self.cell_size_control:
-                self.cell_size_control.handle_hover(event.pos)
-            if self.load_preset_button:
-                self.load_preset_button.handle_hover(event.pos)
-            if self.menu_button:
-                self.menu_button.handle_hover(event.pos)
+            for control in self._controls:
+                control.handle_hover(event.pos)
+            for control in self._slider_controls:
+                control.handle_drag(event.pos)
 
     def update(self):
         """Update widget state (called each frame)."""
@@ -828,23 +831,9 @@ class ControlsWidget:
         # Draw background
         pygame.draw.rect(surface, self.BG_COLOR, self.rect)
 
-        # Draw controls
-        if self.play_pause_button:
-            self.play_pause_button.render(surface)
-        if self.reset_button:
-            self.reset_button.render(surface)
-        if self.steps_control:
-            self.steps_control.render(surface)
-        if self.timestep_control:
-            self.timestep_control.render(surface)
-        if self.temperature_slider:
-            self.temperature_slider.render(surface)
-        if self.cell_size_control:
-            self.cell_size_control.render(surface)
-        if self.load_preset_button:
-            self.load_preset_button.render(surface)
-        if self.menu_button:
-            self.menu_button.render(surface)
+        # Draw all controls
+        for control in self._controls:
+            control.render(surface)
 
     def set_rect(self, rect: pygame.Rect):
         """Update widget position and size, recalculating control positions.
