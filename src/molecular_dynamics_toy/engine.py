@@ -176,6 +176,23 @@ class MDEngine:
             logger.error(f"MD step failed: {e}")
             raise
 
+    def get_energy(self) -> tuple[float, float]:
+        """Return (kinetic_energy, potential_energy) in eV.
+
+        Reads from the calculator's cached results — no extra computation
+        is performed beyond what the last MD step already calculated.
+
+        Returns:
+            Tuple of (kinetic_energy, potential_energy) in eV.
+            Returns (0.0, 0.0) if no atoms are present or no calculator
+            is attached.
+        """
+        if len(self._atoms) == 0 or self._calculator is None:
+            return (0.0, 0.0)
+        ke = self._atoms.get_kinetic_energy()
+        pe = self._atoms.get_potential_energy()
+        return (ke, pe)
+
     def add_atom(self, symbol: str, position: np.ndarray, initialize_velocity: bool = True):
         """Add a new atom to the simulation.
 

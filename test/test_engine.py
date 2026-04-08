@@ -83,3 +83,60 @@ def test_atoms_setter():
 
     assert len(engine.atoms) == 2
     assert engine.atoms.calc is engine.calculator
+
+
+def test_get_energy_no_atoms():
+    """Test get_energy returns (0.0, 0.0) when no atoms are present."""
+    engine = MDEngine(calculator=MockCalculator())
+    ke, pe = engine.get_energy()
+    assert ke == 0.0
+    assert pe == 0.0
+
+
+def test_get_energy_no_calculator():
+    """Test get_energy returns (0.0, 0.0) when no calculator is attached."""
+    engine = MDEngine(calculator=None)
+    engine.add_atom('H', [0, 0, 0])
+    ke, pe = engine.get_energy()
+    assert ke == 0.0
+    assert pe == 0.0
+
+
+def test_get_energy_returns_floats_after_step():
+    """Test get_energy returns a (float, float) tuple after running a step."""
+    engine = MDEngine(calculator=MockCalculator(), temperature=300)
+    engine.add_atom('H', [-0.4, 0, 0])
+    engine.add_atom('H', [0.4, 0, 0])
+    engine.run(1)
+
+    result = engine.get_energy()
+    assert len(result) == 2
+    ke, pe = result
+    assert isinstance(ke, float)
+    assert isinstance(pe, float)
+
+
+def test_get_energy_total_equals_ke_plus_pe():
+    """Test that get_energy KE + PE matches direct ASE calls."""
+    engine = MDEngine(calculator=MockCalculator(), temperature=300)
+    engine.add_atom('H', [-0.4, 0, 0])
+    engine.add_atom('H', [0.4, 0, 0])
+    engine.run(1)
+
+    ke, pe = engine.get_energy()
+    expected_ke = engine.atoms.get_kinetic_energy()
+    expected_pe = engine.atoms.get_potential_energy()
+
+    assert abs(ke - expected_ke) < 1e-10
+    assert abs(pe - expected_pe) < 1e-10
+
+
+def test_get_energy_ke_nonnegative():
+    """Test that kinetic energy is always non-negative."""
+    engine = MDEngine(calculator=MockCalculator(), temperature=300)
+    engine.add_atom('H', [-0.4, 0, 0])
+    engine.add_atom('H', [0.4, 0, 0])
+    engine.run(10)
+
+    ke, _ = engine.get_energy()
+    assert ke >= 0.0

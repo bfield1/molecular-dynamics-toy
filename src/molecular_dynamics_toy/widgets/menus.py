@@ -95,7 +95,8 @@ class MainMenu(Menu):
     """
 
     def __init__(self, rect: pygame.Rect, exit_callback: Optional[Callable[[], None]] = None,
-                 force_show_third_party: Optional[bool] = False):
+                 force_show_third_party: Optional[bool] = False,
+                 toggle_energy_graph_callback: Optional[Callable[[], None]] = None):
         """Initialize the main menu.
 
         Args:
@@ -105,10 +106,16 @@ class MainMenu(Menu):
                 even in a package or development build.
                 Note that it will likely not work if used in a package build,
                 and may check outside the intended directory.
+            toggle_energy_graph_callback: Function to call when the energy graph
+                toggle item is selected. The callback is responsible for flipping
+                the graph visibility state; this menu item updates its own label
+                to reflect the new state after each call.
         """
         super().__init__(rect, title="Menu", auto_close_on_select=False)
 
         self.exit_callback = exit_callback
+        self.toggle_energy_graph_callback = toggle_energy_graph_callback
+        self._energy_graph_enabled: bool = False
 
         about_rect = pygame.Rect(0, 0, 500, 500)
         self.about_textbox = TextBox(
@@ -125,7 +132,24 @@ class MainMenu(Menu):
             # Only link to 3rd party info if using the bundled version of the app.
             self.add_item("Third Party Information",
                           self._show_third_party_info)
+        self.add_item(self._energy_graph_label(), self._toggle_energy_graph)
+        # Keep a reference to the energy graph menu item so we can update its text
+        self._energy_graph_item = self.items[-1]
         self.add_item("Exit", self._exit_application)
+
+    def _energy_graph_label(self) -> str:
+        """Return the current label for the energy graph toggle item."""
+        state = "ON" if self._energy_graph_enabled else "OFF"
+        return f"Energy Graph: {state}"
+
+    def _toggle_energy_graph(self):
+        """Toggle the energy graph overlay."""
+        self._energy_graph_enabled = not self._energy_graph_enabled
+        # Update the menu item text to reflect the new state
+        self._energy_graph_item.text = self._energy_graph_label()
+        logger.info(f"Energy graph toggled {'on' if self._energy_graph_enabled else 'off'}")
+        if self.toggle_energy_graph_callback:
+            self.toggle_energy_graph_callback()
 
     def _show_about(self):
         """Show about dialog."""

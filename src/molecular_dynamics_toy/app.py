@@ -82,7 +82,8 @@ class MDApplication:
         self.preset_menu = PresetsMenu(pygame.Rect(
             0, 0, 300, 400), load_callback=self._load_preset)
         self.main_menu = MainMenu(pygame.Rect(
-            0, 0, 300, 300), exit_callback=self.exit)
+            0, 0, 300, 300), exit_callback=self.exit,
+            toggle_energy_graph_callback=self._toggle_energy_graph)
         # Help overlay
         self.help_overlay = HelpOverlay(self.controls_widget, self.periodic_table_widget,
                                         self.simulation_widget)
@@ -360,6 +361,16 @@ class MDApplication:
 
         except Exception as e:
             logger.error(f"Failed to load preset {preset_id}: {e}")
+
+    def _toggle_energy_graph(self):
+        """Toggle the energy graph overlay on the simulation widget."""
+        if self.simulation_widget:
+            self.simulation_widget.show_energy_graph = (
+                not self.simulation_widget.show_energy_graph
+            )
+            logger.info(
+                f"Energy graph {'enabled' if self.simulation_widget.show_energy_graph else 'disabled'}"
+            )
 
     def exit(self):
         """Exit the application."""

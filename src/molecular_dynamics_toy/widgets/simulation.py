@@ -1,6 +1,7 @@
 """Simulation widget for rendering and controlling MD simulation."""
 
 import logging
+from collections import deque
 import pygame
 import numpy as np
 from typing import Optional, Tuple
@@ -11,6 +12,7 @@ import ase.geometry
 from molecular_dynamics_toy.engine import MDEngine
 from molecular_dynamics_toy.data import colors
 from molecular_dynamics_toy.data.atom_properties import ATOM_COLORS, ATOM_VDW_RADII, ATOM_COVALENT_RADII
+from molecular_dynamics_toy.widgets.energy_graph import EnergyGraphWidget, EnergyPoint
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,14 @@ class SimulationWidget:
         # Distance threshold in Angstrom to avoid putting atoms on top of each other.
         self.collision_threshold = 0.1
 
+        # Energy history: rolling buffer of EnergyPoint(step, ke, pe) records
+        self.energy_history: deque = deque(maxlen=300)
+        self._step_count: int = 0
+
+        # Energy graph overlay
+        self.energy_graph = EnergyGraphWidget(self.energy_history)
+        self.show_energy_graph: bool = False
+
         self._create_engine()
         logger.info("SimulationWidget initialized")
 
@@ -70,6 +80,9 @@ class SimulationWidget:
         if playing and self.engine:
             try:
                 self.engine.run(steps=speed)
+                ke, pe = self.engine.get_energy()
+                self._step_count += speed
+                self.energy_history.append(EnergyPoint(self._step_count, ke, pe))
             except Exception as e:
                 logger.error(f"MD step failed: {e}")
 
@@ -90,6 +103,10 @@ class SimulationWidget:
         # Draw atoms
         if self.engine and len(self.engine.atoms) > 0:
             self._render_atoms(surface)
+
+        # Draw energy graph overlay (on top of atoms, inside cell)
+        if self.show_energy_graph:
+            self.energy_graph.render(surface, cell_rect)
 
     def _get_cell_rect(self) -> pygame.Rect:
         """Get the rectangle for the simulation cell display.
@@ -278,3 +295,6 @@ class SimulationWidget:
             # Delete all atoms using slice notation
             del self.engine.atoms[:]
             logger.info("Simulation reset - all atoms removed")
+        # Clear energy history and step counter
+        self.energy_history.clear()
+        self._step_count = 0

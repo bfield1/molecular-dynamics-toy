@@ -48,3 +48,11 @@ MENU_ITEM_BORDER_COLOR: Color = (180, 180, 180)
 SLIDER_TRACK_COLOR: Color = (180, 180, 180)
 SLIDER_HANDLE_COLOR: Color = (100, 100, 100)
 SLIDER_HANDLE_HOVER_COLOR: Color = (70, 70, 70)
+
+# Energy graph overlay colors
+ENERGY_GRAPH_BG_COLOR: Color = (20, 20, 20)
+ENERGY_GRAPH_LINE_KE_COLOR: Color = (80, 140, 255)    # blue — kinetic energy
+ENERGY_GRAPH_LINE_PE_COLOR: Color = (255, 120, 60)    # orange — potential energy
+ENERGY_GRAPH_LINE_TOTAL_COLOR: Color = (80, 200, 120) # green — total energy
+ENERGY_GRAPH_AXIS_COLOR: Color = (160, 160, 160)
+ENERGY_GRAPH_TEXT_COLOR: Color = (220, 220, 220)
