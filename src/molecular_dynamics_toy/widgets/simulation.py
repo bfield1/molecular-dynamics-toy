@@ -48,9 +48,9 @@ class SimulationWidget:
         # Distance threshold in Angstrom to avoid putting atoms on top of each other.
         self.collision_threshold = 0.1
 
-        # Energy history: rolling buffer of EnergyPoint(step, ke, pe) records
+        # Energy history: rolling buffer of EnergyPoint(time, ke, pe) records
         self.energy_history: deque = deque(maxlen=300)
-        self._step_count: int = 0
+        self._time: float = 0.0
 
         # Energy graph overlay
         self.energy_graph = EnergyGraphWidget(self.energy_history)
@@ -81,8 +81,8 @@ class SimulationWidget:
             try:
                 self.engine.run(steps=speed)
                 ke, pe = self.engine.get_energy()
-                self._step_count += speed
-                self.energy_history.append(EnergyPoint(self._step_count, ke, pe))
+                self._time += self.engine.timestep * speed
+                self.energy_history.append(EnergyPoint(self._time, ke, pe))
             except Exception as e:
                 logger.error(f"MD step failed: {e}")
 
@@ -295,6 +295,6 @@ class SimulationWidget:
             # Delete all atoms using slice notation
             del self.engine.atoms[:]
             logger.info("Simulation reset - all atoms removed")
-        # Clear energy history and step counter
+        # Clear energy history and accumulated time
         self.energy_history.clear()
-        self._step_count = 0
+        self._time = 0.0

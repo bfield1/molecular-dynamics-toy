@@ -352,6 +352,9 @@ class MDApplication:
             # Update simulation
             if self.simulation_widget:
                 self.simulation_widget.engine.atoms = atoms
+                # Clear energy history so the graph starts fresh for the new preset
+                self.simulation_widget.energy_history.clear()
+                self.simulation_widget._time = 0.0
                 logger.info(
                     f"Loaded preset {preset_id}: {len(atoms)} atoms, cell size {cell_size:.2f} Å")
 

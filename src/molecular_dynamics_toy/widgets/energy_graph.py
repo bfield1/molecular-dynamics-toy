@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 class EnergyPoint(NamedTuple):
     """A single recorded energy sample."""
-    step: int
-    ke: float   # kinetic energy in eV
-    pe: float   # potential energy in eV
+    time: float  # simulation time in femtoseconds
+    ke: float    # kinetic energy in eV
+    pe: float    # potential energy in eV
 
 
 class EnergyGraphWidget:
@@ -80,6 +80,10 @@ class EnergyGraphWidget:
             self.GRAPH_HEIGHT,
         )
 
+        # Skip rendering if the graph area is too small to draw
+        if graph_rect.width <= 0 or graph_rect.height <= 0:
+            return
+
         # --- Draw semi-transparent background ---
         bg_surface = pygame.Surface((graph_rect.width, graph_rect.height), pygame.SRCALPHA)
         bg_color_alpha = (*self.BG_COLOR, self.ALPHA)
@@ -93,6 +97,10 @@ class EnergyGraphWidget:
             graph_rect.width - self.MARGIN_LEFT - self.MARGIN_RIGHT,
             graph_rect.height - self.MARGIN_TOP - self.MARGIN_BOTTOM,
         )
+
+        # Skip rendering if plot area is degenerate
+        if plot_rect.width <= 0 or plot_rect.height <= 0:
+            return
 
         # --- Draw axes ---
         # y-axis
@@ -111,19 +119,39 @@ class EnergyGraphWidget:
         )
 
         # --- Draw x-axis label ---
-        x_label = self.font_label.render("Step", True, self.TEXT_COLOR)
+        x_label = self.font_label.render("Time / fs", True, self.TEXT_COLOR)
         surface.blit(
             x_label,
             (plot_rect.centerx - x_label.get_width() // 2,
              graph_rect.bottom - self.MARGIN_BOTTOM + 3),
         )
 
-        # --- Draw data lines ---
+        # --- Draw data lines and x-axis time labels ---
         if len(self.energy_history) >= 2:
             self._draw_lines(surface, plot_rect)
+            self._draw_x_labels(surface, plot_rect)
 
         # --- Draw legend ---
         self._draw_legend(surface, graph_rect)
+
+    def _draw_x_labels(self, surface: pygame.Surface, plot_rect: pygame.Rect):
+        """Draw time tick labels at the left and right ends of the x-axis.
+
+        Args:
+            surface: Surface to draw onto.
+            plot_rect: Plot area rectangle.
+        """
+        history = list(self.energy_history)
+        t_start = history[0].time
+        t_end = history[-1].time
+
+        label_y = plot_rect.bottom + 2
+
+        start_surf = self.font_label.render(f"{t_start:.0f}", True, self.TEXT_COLOR)
+        surface.blit(start_surf, (plot_rect.left, label_y))
+
+        end_surf = self.font_label.render(f"{t_end:.0f}", True, self.TEXT_COLOR)
+        surface.blit(end_surf, (plot_rect.right - end_surf.get_width(), label_y))
 
     def _draw_lines(self, surface: pygame.Surface, plot_rect: pygame.Rect):
         """Draw the three energy lines onto the plot area.
@@ -134,28 +162,45 @@ class EnergyGraphWidget:
         """
         history = list(self.energy_history)
 
+        time_values = [p.time for p in history]
         ke_values = [p.ke for p in history]
         pe_values = [p.pe for p in history]
         total_values = [p.ke + p.pe for p in history]
 
         all_values = ke_values + pe_values + total_values
-        y_min = min(all_values)
-        y_max = max(all_values)
+        # Always include zero in the visible range
+        y_min = min(0.0, min(all_values))
+        y_max = max(0.0, max(all_values))
 
-        # Avoid division by zero when all values are identical
+        # Avoid division by zero when all values are identical (e.g. all zero)
         y_range = y_max - y_min
         if abs(y_range) < 1e-10:
             y_range = 1.0
             y_min -= 0.5
+            y_max = y_min + y_range
 
         n = len(history)
+        t_min = time_values[0]
+        t_max = time_values[-1]
+        t_range = t_max - t_min if t_max > t_min else 1.0
+
         w = plot_rect.width
         h = plot_rect.height
 
         def to_screen(i: int, value: float):
-            x = plot_rect.left + int(i / (n - 1) * w)
+            x = plot_rect.left + int((time_values[i] - t_min) / t_range * w)
             y = plot_rect.bottom - int((value - y_min) / y_range * h)
             return (x, y)
+
+        # Draw zero-energy reference line (always visible since range includes zero)
+        zero_y = plot_rect.bottom - int((0.0 - y_min) / y_range * h)
+        pygame.draw.line(
+            surface, self.AXIS_COLOR,
+            (plot_rect.left, zero_y),
+            (plot_rect.right, zero_y),
+            1,
+        )
+        self._draw_y_label(surface, plot_rect, 0.0, zero_y)
 
         # Draw each series
         for series, color in (
@@ -167,9 +212,11 @@ class EnergyGraphWidget:
             if len(points) >= 2:
                 pygame.draw.lines(surface, color, False, points, 1)
 
-        # Draw y-axis tick labels (min and max)
-        self._draw_y_label(surface, plot_rect, y_max, plot_rect.top)
-        self._draw_y_label(surface, plot_rect, y_min, plot_rect.bottom)
+        # Draw y-axis tick labels (min and max), skipping if too close to zero label
+        if abs(y_max) > abs(y_range) * 0.1:
+            self._draw_y_label(surface, plot_rect, y_max, plot_rect.top)
+        if abs(y_min) > abs(y_range) * 0.1:
+            self._draw_y_label(surface, plot_rect, y_min, plot_rect.bottom)
 
     def _draw_y_label(self, surface: pygame.Surface, plot_rect: pygame.Rect,
                       value: float, y: int):
@@ -189,7 +236,7 @@ class EnergyGraphWidget:
         )
 
     def _draw_legend(self, surface: pygame.Surface, graph_rect: pygame.Rect):
-        """Draw a compact legend in the top-right corner of the graph panel.
+        """Draw a compact legend in the top-left corner of the graph panel.
 
         Args:
             surface: Surface to draw onto.
@@ -207,7 +254,7 @@ class EnergyGraphWidget:
         legend_width = 48
         legend_height = len(entries) * entry_height + 2 * padding
 
-        legend_x = graph_rect.right - self.MARGIN_RIGHT - legend_width
+        legend_x = graph_rect.left + self.MARGIN_LEFT + padding
         legend_y = graph_rect.top + self.MARGIN_TOP
 
         # Semi-transparent legend background

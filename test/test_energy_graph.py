@@ -1,11 +1,7 @@
 """Tests for the EnergyGraphWidget."""
 
-import os
 import pytest
 from collections import deque
-
-os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
@@ -69,7 +65,7 @@ def test_render_empty_history(surface, sim_rect):
 def test_render_one_point(surface, sim_rect):
     """render() does not raise with a single data point."""
     history: deque = deque(maxlen=300)
-    history.append(EnergyPoint(step=1, ke=1.0, pe=-2.0))
+    history.append(EnergyPoint(time=1.0, ke=1.0, pe=-2.0))
     widget = EnergyGraphWidget(history)
     widget.render(surface, sim_rect)  # must not raise
 
@@ -77,8 +73,8 @@ def test_render_one_point(surface, sim_rect):
 def test_render_two_points(surface, sim_rect):
     """render() does not raise with exactly two data points (minimum for a line)."""
     history: deque = deque(maxlen=300)
-    history.append(EnergyPoint(step=1, ke=1.0, pe=-2.0))
-    history.append(EnergyPoint(step=2, ke=1.1, pe=-2.1))
+    history.append(EnergyPoint(time=1.0, ke=1.0, pe=-2.0))
+    history.append(EnergyPoint(time=2.0, ke=1.1, pe=-2.1))
     widget = EnergyGraphWidget(history)
     widget.render(surface, sim_rect)  # must not raise
 
@@ -87,7 +83,7 @@ def test_render_full_history(surface, sim_rect):
     """render() does not raise with a full rolling window of 300 points."""
     history: deque = deque(maxlen=300)
     for i in range(300):
-        history.append(EnergyPoint(step=i, ke=float(i) * 0.01, pe=-float(i) * 0.02))
+        history.append(EnergyPoint(time=float(i), ke=float(i) * 0.01, pe=-float(i) * 0.02))
     widget = EnergyGraphWidget(history)
     widget.render(surface, sim_rect)  # must not raise
 
@@ -96,7 +92,7 @@ def test_render_constant_energy(surface, sim_rect):
     """render() handles the degenerate case where all energy values are identical."""
     history: deque = deque(maxlen=300)
     for i in range(50):
-        history.append(EnergyPoint(step=i, ke=1.0, pe=-1.0))
+        history.append(EnergyPoint(time=float(i), ke=1.0, pe=-1.0))
     widget = EnergyGraphWidget(history)
     widget.render(surface, sim_rect)  # must not raise (y_range guard)
 
@@ -128,19 +124,52 @@ def test_alpha_constant_in_range():
     assert 0 <= EnergyGraphWidget.ALPHA <= 255
 
 
+def test_render_zero_width_sim_rect_does_not_crash(surface):
+    """render() does not crash when sim_rect is too small to draw a graph."""
+    tiny_rect = pygame.Rect(0, 0, 0, 0)
+    history: deque = deque(maxlen=300)
+    history.append(EnergyPoint(time=1.0, ke=1.0, pe=-2.0))
+    widget = EnergyGraphWidget(history)
+    widget.render(surface, tiny_rect)  # must not raise
+
+
+def test_render_smaller_than_graph_height_does_not_crash(surface):
+    """render() does not crash when sim_rect height is smaller than GRAPH_HEIGHT."""
+    small_rect = pygame.Rect(50, 50, 10, EnergyGraphWidget.GRAPH_HEIGHT - 1)
+    history: deque = deque(maxlen=300)
+    history.append(EnergyPoint(time=1.0, ke=1.0, pe=-2.0))
+    widget = EnergyGraphWidget(history)
+    widget.render(surface, small_rect)  # must not raise
+
+
 # ---------------------------------------------------------------------------
 # EnergyPoint named tuple
 # ---------------------------------------------------------------------------
 
 def test_energy_point_fields():
-    """EnergyPoint stores step, ke, and pe correctly."""
-    pt = EnergyPoint(step=42, ke=3.14, pe=-1.59)
-    assert pt.step == 42
+    """EnergyPoint stores time, ke, and pe correctly."""
+    pt = EnergyPoint(time=42.0, ke=3.14, pe=-1.59)
+    assert pt.time == pytest.approx(42.0)
     assert pt.ke == pytest.approx(3.14)
     assert pt.pe == pytest.approx(-1.59)
 
 
 def test_energy_point_total():
     """Total energy can be computed from EnergyPoint fields."""
-    pt = EnergyPoint(step=1, ke=2.0, pe=-5.0)
+    pt = EnergyPoint(time=1.0, ke=2.0, pe=-5.0)
     assert pt.ke + pt.pe == pytest.approx(-3.0)
+
+
+def test_render_unequally_spaced_times(surface, sim_rect):
+    """render() handles unequally spaced time values (variable timestep)."""
+    history: deque = deque(maxlen=300)
+    # Simulate variable timestep: first half at 1 fs, second half at 5 fs
+    t = 0.0
+    for i in range(10):
+        history.append(EnergyPoint(time=t, ke=float(i) * 0.1, pe=-float(i) * 0.05))
+        t += 1.0
+    for i in range(10):
+        history.append(EnergyPoint(time=t, ke=float(i) * 0.1, pe=-float(i) * 0.05))
+        t += 5.0
+    widget = EnergyGraphWidget(history)
+    widget.render(surface, sim_rect)  # must not raise
